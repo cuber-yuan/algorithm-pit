@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}LegendaryBots{% endblock %}</title>
+    <title>{% block title %}Algorithm Pit{% endblock %}</title>
     <!-- Load Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -13,7 +13,7 @@
     <nav class="bg-yellow-800 text-white">
         <div class="max-w-screen-xl mx-auto px-4 py-4 flex items-center justify-between">
             <!-- Logo -->
-            <div class="text-xl font-semibold">LegendaryBots</div>
+            <div class="text-xl font-semibold">Algorithm Pit</div>
 
             <!-- Hamburger button (hidden on large screens) -->
             <button id="menu-toggle" class="lg:hidden text-white focus:outline-none">
@@ -37,9 +37,9 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('tank') }}"
+                    <a href="{{ url_for('about') }}"
                         class="px-4 py-2 rounded-lg bg-gray-700 hover:bg-blue-600 transition-colors duration-200 block">
-                        Contact
+                        About
                     </a>
                 </li>
             </ul>

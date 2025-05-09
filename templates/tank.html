@@ -1,16 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>tank(test)</title>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #f0f0f0; }
-        canvas { display: block; margin: 0 auto; background-color: #e0e0e0; }
-    </style>
-</head>
+{% extends "base.html" %}
+
+{% block title %}Tank - Algorithm Pit{% endblock %}
+
+{% block content %}
 <body>
-    <canvas id="gameCanvas"></canvas>
+    <canvas id="gameCanvas" width="600" height="600" class=" mx-auto "></canvas>
     <script src="{{ url_for('static', filename='tank-battle.js') }}"></script>
 </body>
-</html>
+{% endblock %}

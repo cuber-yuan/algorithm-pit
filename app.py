@@ -10,6 +10,10 @@ def home():
 def games():
     return render_template('games.html')
 
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
 @app.route("/gomoku")
 def gomoku():
     return render_template("gomoku.html")
