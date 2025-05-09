@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gomoku Game</title>
+  <style>
+    body { text-align: center; font-family: Arial; padding: 20px; }
+    canvas { background: #f5deb3; margin-top: 20px; border: 2px solid #333; }
+    a { display: inline-block; margin-top: 15px; color: blue; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1>Gomoku: Play Against AI</h1>
+  <p>You play as <strong>black</strong>. Click on the board to place a stone.</p>
+  <canvas id="board" width="600" height="600"></canvas>
+  <br>
+  <a href="/">← Back to Homepage</a>
+
+  <script>
+    const canvas = document.getElementById("board");
+    const ctx = canvas.getContext("2d");
+    const SIZE = 15;
+    const GRID = canvas.width / SIZE;
+    let board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+    let gameOver = false;
+
+    function drawBoard() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < SIZE; i++) {
+        ctx.beginPath();
+        ctx.moveTo(GRID / 2, GRID / 2 + i * GRID);
+        ctx.lineTo(canvas.width - GRID / 2, GRID / 2 + i * GRID);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(GRID / 2 + i * GRID, GRID / 2);
+        ctx.lineTo(GRID / 2 + i * GRID, canvas.height - GRID / 2);
+        ctx.stroke();
+      }
+
+      for (let i = 0; i < SIZE; i++) {
+        for (let j = 0; j < SIZE; j++) {
+          if (board[i][j] !== 0) drawStone(i, j, board[i][j] === 1);
+        }
+      }
+    }
+
+    function drawStone(x, y, isBlack) {
+      ctx.beginPath();
+      ctx.arc(x * GRID + GRID / 2, y * GRID + GRID / 2, GRID / 2.5, 0, 2 * Math.PI);
+      ctx.fillStyle = isBlack ? "black" : "white";
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    function checkWin(x, y, player) {
+      function count(dx, dy) {
+        let count = 1;
+        for (let d = 1; d < 5; d++) {
+          let nx = x + dx * d, ny = y + dy * d;
+          if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE || board[nx][ny] !== player) break;
+          count++;
+        }
+        for (let d = 1; d < 5; d++) {
+          let nx = x - dx * d, ny = y - dy * d;
+          if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE || board[nx][ny] !== player) break;
+          count++;
+        }
+        return count >= 5;
+      }
+      return count(1, 0) || count(0, 1) || count(1, 1) || count(1, -1);
+    }
+
+    function aiMove() {
+      for (let i = 0; i < SIZE; i++) {
+        for (let j = 0; j < SIZE; j++) {
+          if (board[i][j] === 0) {
+            board[i][j] = 2;
+            drawBoard();
+            if (checkWin(i, j, 2)) {
+              setTimeout(() => alert("AI wins!"), 100);
+              gameOver = true;
+            }
+            return;
+          }
+        }
+      }
+    }
+
+    canvas.addEventListener("click", (e) => {
+      if (gameOver) return;
+      let x = Math.floor(e.offsetX / GRID);
+      let y = Math.floor(e.offsetY / GRID);
+      if (board[x][y] !== 0) return;
+      board[x][y] = 1;
+      drawBoard();
+      if (checkWin(x, y, 1)) {
+        setTimeout(() => alert("You win!"), 100);
+        gameOver = true;
+        return;
+      }
+      setTimeout(aiMove, 300);
+    });
+
+    drawBoard();
+  </script>
+</body>
+</html>
