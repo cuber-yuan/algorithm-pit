@@ -10,5 +10,9 @@ def home():
 def gomoku():
     return render_template("gomoku.html")
 
+@app.route("/tank")
+def tank():
+    return render_template("tank.html")
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
