@@ -1,61 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Legend Zone</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        header {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            text-align: center;
-        }
-        main {
-            margin: 20px;
-        }
-        footer {
-            background-color: #333;
-            color: white;
-            text-align: center;
-            padding: 10px;
-            position: fixed;
-            width: 100%;
-            bottom: 0;
-        }
-    </style>
-</head>
-<body>
-    
-<header>
-    <h1>Welcome to Legend Zone</h1>
-    <p>Personal blog and portfolio</p>
-</header>
+{% extends "base.html" %}
 
-<main>
-    <h2>About Me</h2>
-    <p>Hello! I'm [Your Name], a passionate developer and enthusiast. This website is where I share my projects, blog posts, and more!</p>
+{% block title %}LegendaryBots{% endblock %}
 
-    <h3>Mini Games</h3>
-    <ul>
-        <li><a href="/gomoku">GOMOKU</a></li>
-        <li><a href="/tank">TANK TEST</a></li>
-    </ul>
-
-    <h3>Contact</h3>
-    <p>If you have any questions, feel free to reach out to me at <strong>your.email@example.com</strong></p>
-</main>
-
-<footer>
-    <p>© 2025 My Website. All Rights Reserved.</p>
-</footer>
-
-</body>
-</html>
+{% block content %}
+    <h1>Welcome to My LegendaryBots</h1>
+    <p>This is the homepage. </p>
+{% endblock %}

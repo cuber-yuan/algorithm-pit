@@ -1,35 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-  <meta charset="UTF-8" />
-  <title>Gomoku Game</title>
-  <style>
-    body {
-      text-align: center;
-      font-family: Arial;
-      padding: 20px;
-    }
+{% block title %}Gomoku - LegendaryBots{% endblock %}
 
-    canvas {
-      background: #f5deb3;
-      margin-top: 20px;
-      border: 2px solid #333;
-    }
+{% block content %}
+<style>
+  
 
-    a {
-      display: inline-block;
-      margin-top: 15px;
-      color: blue;
-      text-decoration: underline;
-    }
-  </style>
-</head>
+  canvas {
+    background: #f5deb3;
+    margin-top: 20px;
+    border: 2px solid #333;
+  }
 
-<body>
-  <h1>Gomoku: Play Against AI</h1>
+  
+</style>
+
+    <h1>Gomoku: Play Against AI</h1>
   <p>You play as <strong>black</strong>. Click on the board to place a stone.</p>
-  <canvas id="board" width="600" height="600"></canvas>
+  <canvas id="board" width="600" height="600" class=" mx-auto "></canvas>
   <br>
   <a href="/">← Back to Homepage</a>
 
@@ -171,6 +159,5 @@
 
     drawBoard();
   </script>
-</body>
+{% endblock %}
 
-</html>
