@@ -1,14 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>Gomoku Game</title>
   <style>
-    body { text-align: center; font-family: Arial; padding: 20px; }
-    canvas { background: #f5deb3; margin-top: 20px; border: 2px solid #333; }
-    a { display: inline-block; margin-top: 15px; color: blue; text-decoration: underline; }
+    body {
+      text-align: center;
+      font-family: Arial;
+      padding: 20px;
+    }
+
+    canvas {
+      background: #f5deb3;
+      margin-top: 20px;
+      border: 2px solid #333;
+    }
+
+    a {
+      display: inline-block;
+      margin-top: 15px;
+      color: blue;
+      text-decoration: underline;
+    }
   </style>
 </head>
+
 <body>
   <h1>Gomoku: Play Against AI</h1>
   <p>You play as <strong>black</strong>. Click on the board to place a stone.</p>
@@ -71,20 +88,71 @@
     }
 
     function aiMove() {
+      if (gameOver) return;
+
+      function score(x, y, player) {
+        // 简单评分函数：自己相连数量越多，位置越靠中心越好
+        let count = 0;
+        const directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
+        for (let [dx, dy] of directions) {
+          let line = 1;
+          for (let d = 1; d < 5; d++) {
+            let nx = x + dx * d, ny = y + dy * d;
+            if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) break;
+            if (board[nx][ny] === player) line++;
+            else break;
+          }
+          for (let d = 1; d < 5; d++) {
+            let nx = x - dx * d, ny = y - dy * d;
+            if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) break;
+            if (board[nx][ny] === player) line++;
+            else break;
+          }
+          count = Math.max(count, line);
+        }
+        const centerBonus = SIZE - Math.abs(x - SIZE / 2) - Math.abs(y - SIZE / 2);
+        return count * 10 + centerBonus;
+      }
+
+      let best = { score: -1, x: 0, y: 0 };
+
       for (let i = 0; i < SIZE; i++) {
         for (let j = 0; j < SIZE; j++) {
-          if (board[i][j] === 0) {
-            board[i][j] = 2;
+          if (board[i][j] !== 0) continue;
+
+          // 模拟 AI 胜利
+          board[i][j] = 2;
+          if (checkWin(i, j, 2)) {
             drawBoard();
-            if (checkWin(i, j, 2)) {
-              setTimeout(() => alert("AI wins!"), 100);
-              gameOver = true;
-            }
+            setTimeout(() => alert("AI wins!"), 100);
+            gameOver = true;
             return;
           }
+          board[i][j] = 0;
+
+          // 模拟玩家胜利并阻止
+          board[i][j] = 1;
+          if (checkWin(i, j, 1)) {
+            board[i][j] = 2;
+            drawBoard();
+            return;
+          }
+          board[i][j] = 0;
+
+          // 综合评分
+          let s = score(i, j, 2);
+          if (s > best.score) best = { score: s, x: i, y: j };
         }
       }
+
+      board[best.x][best.y] = 2;
+      drawBoard();
+      if (checkWin(best.x, best.y, 2)) {
+        setTimeout(() => alert("AI wins!"), 100);
+        gameOver = true;
+      }
     }
+
 
     canvas.addEventListener("click", (e) => {
       if (gameOver) return;
@@ -104,4 +172,5 @@
     drawBoard();
   </script>
 </body>
+
 </html>
