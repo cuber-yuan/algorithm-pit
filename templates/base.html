@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Algorithm Pit{% endblock %}</title>
     <!-- Add favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo.svg') }}">
@@ -49,7 +50,7 @@
     </nav>
 
     <!-- Page content -->
-    <div class="p-6 min-h-[calc(100vh-12rem)]">
+    <div class="p-6 min-h-[calc(100vh-12rem)] max-w-screen-lg mx-auto">
         {% block content %}{% endblock %}
     </div>
 
