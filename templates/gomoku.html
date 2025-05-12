@@ -3,161 +3,120 @@
 {% block title %}Gomoku - Algorithm Pit{% endblock %}
 
 {% block content %}
+<script src="{{ url_for('static', filename='index.js') }}"></script>
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 <style>
-  
-
   canvas {
     background: #f5deb3;
     margin-top: 20px;
     border: 2px solid #333;
   }
-
-  
 </style>
-
-    <h1>Gomoku: Play Against AI</h1>
+<div class="max-w-screen-xl mx-auto px-4">
+  <h1>Gomoku: Play Against AI</h1>
   <p>You play as <strong>black</strong>. Click on the board to place a stone.</p>
   <canvas id="board" width="600" height="600" class=" mx-auto "></canvas>
   <br>
-  <a href="/">← Back to Homepage</a>
 
-  <script>
-    const canvas = document.getElementById("board");
-    const ctx = canvas.getContext("2d");
-    const SIZE = 15;
-    const GRID = canvas.width / SIZE;
-    let board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
-    let gameOver = false;
+  <div><button type="button" onclick="newGame()">new game</button></div>
+  <div><a href="/">← Back to Homepage</a></div>
+</div>
+<script>
+  const canvas = document.getElementById("board");
+  const ctx = canvas.getContext("2d");
+  const SIZE = 15;
+  const GRID = canvas.width / SIZE;
+  let board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+  let gameOver = false;
 
-    function drawBoard() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = 0; i < SIZE; i++) {
-        ctx.beginPath();
-        ctx.moveTo(GRID / 2, GRID / 2 + i * GRID);
-        ctx.lineTo(canvas.width - GRID / 2, GRID / 2 + i * GRID);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(GRID / 2 + i * GRID, GRID / 2);
-        ctx.lineTo(GRID / 2 + i * GRID, canvas.height - GRID / 2);
-        ctx.stroke();
-      }
+  let userId = null;
+  const socket = io();
 
-      for (let i = 0; i < SIZE; i++) {
-        for (let j = 0; j < SIZE; j++) {
-          if (board[i][j] !== 0) drawStone(i, j, board[i][j] === 1);
-        }
-      }
+  socket.on('connect', () => {
+    console.log('connected to server.');
+  });
+
+  socket.on('init', (data) => {
+    userId = data.user_id;
+  });
+
+
+  socket.on('update', (data) => {
+    board = data.board;
+    drawBoard();
+    
+    if (data.winner) {
+      alert((data.winner === 1 ? 'you' : 'AI') + ' win！');
     }
+  });
 
-    function drawStone(x, y, isBlack) {
+  function newGame() {
+
+  }
+
+  function drawBoard() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < SIZE; i++) {
       ctx.beginPath();
-      ctx.arc(x * GRID + GRID / 2, y * GRID + GRID / 2, GRID / 2.5, 0, 2 * Math.PI);
-      ctx.fillStyle = isBlack ? "black" : "white";
-      ctx.fill();
+      ctx.moveTo(GRID / 2, GRID / 2 + i * GRID);
+      ctx.lineTo(canvas.width - GRID / 2, GRID / 2 + i * GRID);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(GRID / 2 + i * GRID, GRID / 2);
+      ctx.lineTo(GRID / 2 + i * GRID, canvas.height - GRID / 2);
       ctx.stroke();
     }
 
-    function checkWin(x, y, player) {
-      function count(dx, dy) {
-        let count = 1;
-        for (let d = 1; d < 5; d++) {
-          let nx = x + dx * d, ny = y + dy * d;
-          if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE || board[nx][ny] !== player) break;
-          count++;
-        }
-        for (let d = 1; d < 5; d++) {
-          let nx = x - dx * d, ny = y - dy * d;
-          if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE || board[nx][ny] !== player) break;
-          count++;
-        }
-        return count >= 5;
-      }
-      return count(1, 0) || count(0, 1) || count(1, 1) || count(1, -1);
-    }
-
-    function aiMove() {
-      if (gameOver) return;
-
-      function score(x, y, player) {
-        // 简单评分函数：自己相连数量越多，位置越靠中心越好
-        let count = 0;
-        const directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
-        for (let [dx, dy] of directions) {
-          let line = 1;
-          for (let d = 1; d < 5; d++) {
-            let nx = x + dx * d, ny = y + dy * d;
-            if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) break;
-            if (board[nx][ny] === player) line++;
-            else break;
-          }
-          for (let d = 1; d < 5; d++) {
-            let nx = x - dx * d, ny = y - dy * d;
-            if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE) break;
-            if (board[nx][ny] === player) line++;
-            else break;
-          }
-          count = Math.max(count, line);
-        }
-        const centerBonus = SIZE - Math.abs(x - SIZE / 2) - Math.abs(y - SIZE / 2);
-        return count * 10 + centerBonus;
-      }
-
-      let best = { score: -1, x: 0, y: 0 };
-
-      for (let i = 0; i < SIZE; i++) {
-        for (let j = 0; j < SIZE; j++) {
-          if (board[i][j] !== 0) continue;
-
-          // 模拟 AI 胜利
-          board[i][j] = 2;
-          if (checkWin(i, j, 2)) {
-            drawBoard();
-            setTimeout(() => alert("AI wins!"), 100);
-            gameOver = true;
-            return;
-          }
-          board[i][j] = 0;
-
-          // 模拟玩家胜利并阻止
-          board[i][j] = 1;
-          if (checkWin(i, j, 1)) {
-            board[i][j] = 2;
-            drawBoard();
-            return;
-          }
-          board[i][j] = 0;
-
-          // 综合评分
-          let s = score(i, j, 2);
-          if (s > best.score) best = { score: s, x: i, y: j };
-        }
-      }
-
-      board[best.x][best.y] = 2;
-      drawBoard();
-      if (checkWin(best.x, best.y, 2)) {
-        setTimeout(() => alert("AI wins!"), 100);
-        gameOver = true;
+    for (let i = 0; i < SIZE; i++) {
+      for (let j = 0; j < SIZE; j++) {
+        if (board[i][j] !== 0) drawStone(i, j, board[i][j] === 1);
       }
     }
+  }
 
+  function drawStone(x, y, isBlack) {
+    ctx.beginPath();
+    ctx.arc(x * GRID + GRID / 2, y * GRID + GRID / 2, GRID / 2.5, 0, 2 * Math.PI);
+    ctx.fillStyle = isBlack ? "black" : "white";
+    ctx.fill();
+    ctx.stroke();
+  }
 
-    canvas.addEventListener("click", (e) => {
-      if (gameOver) return;
-      let x = Math.floor(e.offsetX / GRID);
-      let y = Math.floor(e.offsetY / GRID);
-      if (board[x][y] !== 0) return;
-      board[x][y] = 1;
-      drawBoard();
-      if (checkWin(x, y, 1)) {
-        setTimeout(() => alert("You win!"), 100);
-        gameOver = true;
-        return;
+  function checkWin(x, y, player) {
+    function count(dx, dy) {
+      let count = 1;
+      for (let d = 1; d < 5; d++) {
+        let nx = x + dx * d, ny = y + dy * d;
+        if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE || board[nx][ny] !== player) break;
+        count++;
       }
-      setTimeout(aiMove, 300);
-    });
+      for (let d = 1; d < 5; d++) {
+        let nx = x - dx * d, ny = y - dy * d;
+        if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE || board[nx][ny] !== player) break;
+        count++;
+      }
+      return count >= 5;
+    }
+    return count(1, 0) || count(0, 1) || count(1, 1) || count(1, -1);
+  }
 
-    drawBoard();
-  </script>
+  function testcallback(data) {
+    consloe.print(data)
+  }
+
+  
+
+
+  canvas.addEventListener("click", (e) => {
+    if (gameOver) return;
+    let x = Math.floor(e.offsetX / GRID);
+    let y = Math.floor(e.offsetY / GRID);
+    socket.emit('player_move', { user_id: userId, x: x, y: y });
+
+
+    
+  });
+
+  drawBoard();
+</script>
 {% endblock %}
-
