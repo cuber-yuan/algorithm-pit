@@ -49,9 +49,22 @@
     </nav>
 
     <!-- Page content -->
-    <div class="p-6">
+    <div class="p-6 min-h-[calc(100vh-12rem)]">
         {% block content %}{% endblock %}
     </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-10">
+        <div class="max-w-screen-xl mx-auto px-4 text-center">
+            <p class="text-sm">&copy; 2025 Algorithm Pit. All rights reserved.</p>
+            <p class="text-sm mt-2">
+                <a href="/about" class="text-blue-400 hover:underline">About Us</a> |
+                <a href="/contact" class="text-blue-400 hover:underline">Contact</a> |
+                <a href="/privacy" class="text-blue-400 hover:underline">Privacy Policy</a>
+            </p>
+        </div>
+    </footer>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const toggle = document.getElementById('menu-toggle');
