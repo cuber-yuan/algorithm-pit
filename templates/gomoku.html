@@ -12,15 +12,35 @@
     border: 2px solid #333;
   }
 </style>
-<div class="max-w-screen-xl mx-auto px-4">
-  <h1>Gomoku: Play Against AI</h1>
-  <p>You play as <strong>black</strong>. Click on the board to place a stone.</p>
-  <canvas id="board" width="600" height="600" class=" mx-auto "></canvas>
-  <br>
+<div class="bg-gray-100 py-10">
+  <div class="max-w-screen-xl mx-auto px-4">
+    <!-- Header Section -->
+    <header class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800">Gomoku: Play Against AI</h1>
+      <p class="text-lg text-gray-600 mt-2">Challenge yourself in this classic strategy game. Align five stones in a row to win!</p>
+    </header>
 
-  <div><button type="button" onclick="newGame()">new game</button></div>
-  <div><a href="/">← Back to Homepage</a></div>
+    <!-- Game Description Section -->
+    <section class="bg-white p-6 rounded-lg shadow-md mb-8">
+      <h2 class="text-2xl font-semibold text-gray-800 mb-4">About Gomoku</h2>
+      <p class="text-gray-700 leading-relaxed">
+        Gomoku, also known as "Five in a Row," is a traditional board game that has been enjoyed for centuries. The rules are simple yet the strategy can be complex, making it a favorite for players of all ages. The goal is to place five of your stones in a row—horizontally, vertically, or diagonally—before your opponent does.
+      </p>
+    </section>
+
+    <!-- Game Canvas Section -->
+    <div class="bg-white p-6 rounded-lg shadow-md text-center">
+      <p class="text-gray-700 mb-4">You play as <strong>black</strong>. Click on the board to place a stone.</p>
+      <canvas id="board" width="600" height="600" class="mx-auto"></canvas>
+      <br>
+      <button type="button" onclick="newGame()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New Game</button>
+      <div class="mt-4">
+        <a href="/" class="text-blue-500 hover:underline">← Back to Homepage</a>
+      </div>
+    </div>
+  </div>
 </div>
+
 <script>
   const canvas = document.getElementById("board");
   const ctx = canvas.getContext("2d");
