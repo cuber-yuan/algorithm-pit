@@ -53,11 +53,16 @@ def handle_player_move(data):
     user_id = data['user_id']
     x, y = data['x'], data['y']
     game = sessions.get(user_id)
-    sid     = request.sid   
+    sid = request.sid
 
     if not game:
         print("userid 出错")
         emit('error', {'message': '无效 user_id'})
+        return
+
+    # Check if it's the player's turn
+    if not game.is_player_turn:
+        emit('error', {'message': '请等待 AI 落子完成'})
         return
 
     if not game.place_piece(x, y, 1):
@@ -65,12 +70,14 @@ def handle_player_move(data):
         emit('error', {'message': '落子无效'})
         return
 
+    # Update the game state and switch turn to AI
+    game.is_player_turn = False
     response = {
         'board': game.board,
         'winner': game.winner,
         'move': {'x': x, 'y': y, 'player': 1}
     }
-    if game.check_win(x,y,1):
+    if game.check_win(x, y, 1):
         response = {
             'board': game.board,
             'winner': game.winner,
@@ -79,9 +86,8 @@ def handle_player_move(data):
 
     emit('update', response)
 
+    # Start AI move in the background
     socketio.start_background_task(_do_ai_move, user_id, sid)
-
-    
 
 def _do_ai_move(user_id, sid):
     """后台任务：计算 AI 落子并推送给指定 sid"""
@@ -90,9 +96,10 @@ def _do_ai_move(user_id, sid):
         return
 
     ai_x, ai_y = game.ai_move()
+    game.is_player_turn = True  # Switch turn back to the player
     socketio.emit('update', {
-        'board':   game.board,
-        'winner':  game.winner,
+        'board': game.board,
+        'winner': game.winner,
         'ai_move': {'x': ai_x, 'y': ai_y, 'player': 2}
     }, room=sid)
 

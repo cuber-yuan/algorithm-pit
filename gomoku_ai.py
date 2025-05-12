@@ -41,6 +41,7 @@ class GomokuGame:
         # Killer Moves: store 2 killer moves per ply
         # Max practical depth for killers might be around 10-15 plies
         self.killer_moves = [[(None, None), (None, None)] for _ in range(search_depth + 5)] # Max depth + buffer
+        self.is_player_turn = True  # Initialize to True, as the player starts the game
 
     def _initialize_hash(self):
         self.current_hash = 0
@@ -63,7 +64,7 @@ class GomokuGame:
         self._initialize_hash()
         self.transposition_table.clear()
         self.killer_moves = [[(None, None), (None, None)] for _ in range(self.search_depth + 5)]
-
+        self.is_player_turn = True  # Reset to True for a new game
 
     def is_valid(self, x, y):
         return 0 <= x < self.board_size and 0 <= y < self.board_size and self.board[x][y] == EMPTY
