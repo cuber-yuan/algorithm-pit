@@ -1,5 +1,4 @@
 # game.py
-import time
 
 class GomokuGame:
     def __init__(self):
@@ -10,6 +9,11 @@ class GomokuGame:
     def is_valid(self, x, y):
         return 0 <= x < 15 and 0 <= y < 15 and self.board[x][y] == 0
 
+    def new_game(self):
+        self.board = [[0] * 15 for _ in range(15)]
+        self.current_player = 1  # 1 = player, 2 = AI
+        self.winner = 0
+        
     def place_piece(self, x, y, player):
         if self.is_valid(x, y) and self.winner == 0 and self.current_player == player:
             self.board[x][y] = player
@@ -20,80 +24,69 @@ class GomokuGame:
         return False
 
     def ai_move(self):
-        # 1. 首手必下中心
-        if all(self.board[y][x] == 0 for y in range(15) for x in range(15)):
-            center = (7, 7)
-            self.place_piece(center[0], center[1], 2)
-            return center
-
-        # 2. 模式-分数映射（可以根据需要微调）
-        # 自己的模式（2 表示 AI）
-        my_patterns = {
-            '0222220': 100000,   # 活五
-            '022220':   10000,   # 活四
-            '202222':   8000,    # 冲四
-            '02220':    1000,    # 活三
-            '20222':    800,     # 冲三
-            '0220':     200,     # 活二
-            '2022':     100,     # 冲二
-        }
-        # 对手的模式（1 表示玩家）
-        opp_patterns = {
-            '011110': 90000,     # 对手活五（必须堵）
-            '01110':  9000,      # 对手活四
-            '10111':  8000,      # 对手冲四
-            '0110':   900,       # 对手活三
-            '1011':   800,       # 对手冲三
-            '010':    50,        # 对手活二
-        }
-
-        directions = [(1,0),(0,1),(1,1),(1,-1)]
-        def score_at(x, y, patterns, player):
-            """在 (x,y) 位置，针对 player（1/2）按 patterns 打分。"""
-            total = 0
+        def score(x, y, player):
+            count = 0
+            directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
             for dx, dy in directions:
-                # 构建长度 7 的窗口：从 -3 到 +3
-                line = ''
-                for d in range(-3, 4):
-                    nx, ny = x + d*dx, y + d*dy
-                    if 0 <= nx < 15 and 0 <= ny < 15:
-                        v = self.board[ny][nx]
-                        if v == player:
-                            line += str(player)
-                        elif v == 0:
-                            line += '0'
-                        else:
-                            line += '3'  # 对手的子
+                line = 1
+                for d in range(1, 5):
+                    nx, ny = x + dx * d, y + dy * d
+                    if nx < 0 or ny < 0 or nx >= 15 or ny >= 15:
+                        break
+                    if self.board[nx][ny] == player:
+                        line += 1
                     else:
-                        line += '3'      # 边界当对手
-                # 对每种模式打分
-                for ptn, val in patterns.items():
-                    if ptn in line:
-                        total += val
-            return total
+                        break
+                for d in range(1, 5):
+                    nx, ny = x - dx * d, y - dy * d
+                    if nx < 0 or ny < 0 or nx >= 15 or ny >= 15:
+                        break
+                    if self.board[nx][ny] == player:
+                        line += 1
+                    else:
+                        break
+                count = max(count, line)
+            center_bonus = 15 - abs(x - 15 / 2) - abs(y - 15 / 2)
+            return count * 10 + center_bonus
 
-        best_score = -1
-        best_move = None
+        best = {'score': -1, 'x': 0, 'y': 0}
 
-        # 3. 扫描每个空位，计算综合得分
-        for y in range(15):
-            for x in range(15):
-                if self.board[y][x] != 0:
+        for i in range(15):
+            for j in range(15):
+                if self.board[i][j] != 0:
                     continue
-                # 本方进攻分 + 对手威胁分 * 权重
-                my_score  = score_at(x, y, my_patterns, 2)
-                opp_score = score_at(x, y, opp_patterns, 1)
-                score = my_score + opp_score * 1.1
 
-                if score > best_score:
-                    best_score = score
-                    best_move = (x, y)
+                # 模拟 AI 胜利
+                self.board[i][j] = 2
+                if self.check_win(i, j, 2):
+                    self.winner = 2
+                    print("AI wins!")
+                    gameOver = True
+                    self.current_player = 1
+                    return [i,j]
+                self.board[i][j] = 0
 
-        # 4. 落子并返回
-        if best_move:
-            self.place_piece(best_move[0], best_move[1], 2)
-            return best_move
-        return None
+                # 模拟玩家胜利并阻止
+                self.board[i][j] = 1
+                if self.check_win(i, j, 1):
+                    self.board[i][j] = 2
+                    self.current_player = 1
+                    return[i,j]
+                self.board[i][j] = 0
+
+                # 综合评分
+                s = score(i, j, 2)
+                if s > best['score']:
+                    best = {'score': s, 'x': i, 'y': j}
+
+        self.board[best['x']][best['y']] = 2
+        if self.check_win(best['x'], best['y'], 2):
+            print("AI wins!")
+            self.winner = 2
+            gameOver = True
+        self.current_player = 1
+        return [best['x'],best['y']]
+        
 
 
     def check_win(self, x, y, player):

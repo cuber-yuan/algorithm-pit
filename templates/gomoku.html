@@ -33,7 +33,7 @@
   const socket = io();
 
   socket.on('connect', () => {
-    console.log('connected to server.');
+    
   });
 
   socket.on('init', (data) => {
@@ -44,14 +44,13 @@
   socket.on('update', (data) => {
     board = data.board;
     drawBoard();
-    
     if (data.winner) {
       alert((data.winner === 1 ? 'you' : 'AI') + ' win！');
     }
   });
 
   function newGame() {
-
+    socket.emit('new_game', { user_id: userId });
   }
 
   function drawBoard() {
@@ -104,7 +103,7 @@
     consloe.print(data)
   }
 
-  
+
 
 
   canvas.addEventListener("click", (e) => {
@@ -114,7 +113,7 @@
     socket.emit('player_move', { user_id: userId, x: x, y: y });
 
 
-    
+
   });
 
   drawBoard();

@@ -53,21 +53,29 @@ def handle_player_move(data):
     user_id = data['user_id']
     x, y = data['x'], data['y']
     game = sessions.get(user_id)
-    sid     = request.sid   # 当前连接的 socket id
+    sid     = request.sid   
 
     if not game:
+        print("userid 出错")
         emit('error', {'message': '无效 user_id'})
-        #return
+        return
 
     if not game.place_piece(x, y, 1):
+        print('落子在无效位置')
         emit('error', {'message': '落子无效'})
-        #return
+        return
 
     response = {
         'board': game.board,
         'winner': game.winner,
         'move': {'x': x, 'y': y, 'player': 1}
     }
+    if game.check_win(x,y,1):
+        response = {
+            'board': game.board,
+            'winner': game.winner,
+            'move': {'x': x, 'y': y, 'player': 1}
+        }
 
     emit('update', response)
 
@@ -81,47 +89,25 @@ def _do_ai_move(user_id, sid):
     if not game or game.winner != 0:
         return
 
-    # 耗时计算
     ai_x, ai_y = game.ai_move()
-
-    # 直接向 room=sid 的客户端发消息
     socketio.emit('update', {
         'board':   game.board,
         'winner':  game.winner,
         'ai_move': {'x': ai_x, 'y': ai_y, 'player': 2}
     }, room=sid)
 
-@app.route('/gomoku/new_game', methods=['GET'])
-def new_game():
-    user_id = str(uuid4())
-    sessions[user_id] = GomokuGame()
-    return jsonify({'user_id': user_id})
-
-
-
-@app.route('/gomoku/get_move', methods=['POST'])
-def get_move():
-    data = request.get_json()
-    user_id = data.get('user_id')
-    x, y = data.get('x'), data.get('y')
+@socketio.on('new_game')
+def new_game(data):
+    user_id = data['user_id']
     game = sessions.get(user_id)
+    game.new_game()
+    response = {
+            'board': game.board,
+        }
 
-    if not game:
-        return jsonify({'error': 'invalid user_id'}), 400
+    emit('update', response)
 
-    if not game.place_piece(x, y, 1):
-        return jsonify({'error': 'invalid move'}), 400
 
-    print("debug")
-    print(data)
-    ai_x, ai_y = game.ai_move() if game.winner == 0 else (None, None)
-
-    return jsonify({
-        'board': game.board,
-        'current_player': game.current_player,
-        'winner': game.winner,
-        'ai_move': {'x': ai_x, 'y': ai_y}
-    })
 
 @app.route("/tank")
 def tank():
