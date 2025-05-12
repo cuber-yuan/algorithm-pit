@@ -33,7 +33,7 @@
   const socket = io();
 
   socket.on('connect', () => {
-    
+
   });
 
   socket.on('init', (data) => {
@@ -55,23 +55,50 @@
 
   function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 画网格线
     for (let i = 0; i < SIZE; i++) {
       ctx.beginPath();
       ctx.moveTo(GRID / 2, GRID / 2 + i * GRID);
       ctx.lineTo(canvas.width - GRID / 2, GRID / 2 + i * GRID);
       ctx.stroke();
+
       ctx.beginPath();
       ctx.moveTo(GRID / 2 + i * GRID, GRID / 2);
       ctx.lineTo(GRID / 2 + i * GRID, canvas.height - GRID / 2);
       ctx.stroke();
     }
 
+    // 绘制五个星位点
+    const starPoints = [
+      [3, 3], [3, 11], [7, 7], [11, 3], [11, 11]
+    ];
+    for (let [x, y] of starPoints) {
+      drawStarPoint(x, y);
+    }
+
+    // 绘制已有棋子
     for (let i = 0; i < SIZE; i++) {
       for (let j = 0; j < SIZE; j++) {
-        if (board[i][j] !== 0) drawStone(i, j, board[i][j] === 1);
+        if (board[i][j] !== 0) {
+          drawStone(i, j, board[i][j] === 1);
+        }
       }
     }
   }
+
+  // 新增：绘制星位点
+  function drawStarPoint(i, j) {
+    const x = GRID / 2 + i * GRID;
+    const y = GRID / 2 + j * GRID;
+    const r = 5; // 星位点半径
+
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, 2 * Math.PI);
+    ctx.fillStyle = '#333';
+    ctx.fill();
+  }
+
 
   function drawStone(x, y, isBlack) {
     ctx.beginPath();
