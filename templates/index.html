@@ -1,10 +1,31 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Algorithm Pit{% endblock %}
+{% block title %}Home - Algorithm Pit{% endblock %}
 
 {% block content %}
-<div class="max-w-screen-xl mx-auto px-4">
-    <h1>Welcome to Algorithm Pit</h1>
-    <p>This is the homepage. </p>
+<div class="max-w-screen-lg mx-auto mt-8 space-y-12">
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-r from-blue-600 to-blue-400 text-white p-8 rounded-lg shadow-lg">
+        <h1 class="text-4xl font-bold mb-4">Welcome to Algorithm Pit</h1>
+        <p class="text-lg">Your hub for AI, coding, and technology. Explore games, learn algorithms, and more!</p>
+    </section>
+
+    <!-- Placeholder Section 1 -->
+    <section class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-semibold mb-4">Section 1</h2>
+        <p class="text-gray-700">Add your content here. This could be an introduction, a feature highlight, or anything else.</p>
+    </section>
+
+    <!-- Placeholder Section 2 -->
+    <section class="bg-gray-100 p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-semibold mb-4">Section 2</h2>
+        <p class="text-gray-700">Add more content here. This could be a list of features, recent updates, or announcements.</p>
+    </section>
+
+    <!-- Placeholder Section 3 -->
+    <section class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-semibold mb-4">Section 3</h2>
+        <p class="text-gray-700">Use this section for additional information, links, or anything else you'd like to showcase.</p>
+    </section>
 </div>
 {% endblock %}

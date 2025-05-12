@@ -1,18 +1,41 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
 {% block title %}Games - Algorithm Pit{% endblock %}
 
 {% block content %}
-<main>
-  <div class="max-w-screen-xl mx-auto px-4">
-  <h2>Mini Games</h2>
-  <ul>
-      <li><a href="/gomoku">GOMOKU</a></li>
-      <li><a href="/tank">TANK TEST</a></li>
-  </ul>
+<div class="max-w-screen-lg mx-auto mt-8">
+    <h1 class="text-3xl font-bold text-center mb-6">Game List</h1>
+    <div class="overflow-x-auto">
+        <table class="table-auto w-full border-collapse border border-gray-300 shadow-lg">
+            <thead class="bg-blue-600 text-white">
+                <tr>
+                    <th class="px-4 py-2 border border-gray-300">#</th>
+                    <th class="px-4 py-2 border border-gray-300">Game Name</th>
+                    <th class="px-4 py-2 border border-gray-300">Description</th>
+                    <th class="px-4 py-2 border border-gray-300">Play</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white">
+                <tr class="hover:bg-gray-100">
+                    <td class="px-4 py-2 border border-gray-300 text-center">1</td>
+                    <td class="px-4 py-2 border border-gray-300">Gomoku</td>
+                    <td class="px-4 py-2 border border-gray-300">A classic strategy board game.</td>
+                    <td class="px-4 py-2 border border-gray-300 text-center">
+                        <a href="{{ url_for('gomoku') }}" class="text-blue-600 hover:underline">Play</a>
+                    </td>
+                </tr>
+                <tr class="hover:bg-gray-100">
+                    <td class="px-4 py-2 border border-gray-300 text-center">2</td>
+                    <td class="px-4 py-2 border border-gray-300">Tank Battle</td>
+                    <td class="px-4 py-2 border border-gray-300">An action-packed tank battle game.</td>
+                    <td class="px-4 py-2 border border-gray-300 text-center">
+                        <a href="{{ url_for('tank') }}" class="text-blue-600 hover:underline">Play</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
-  
-</main>
 {% endblock %}
 
 

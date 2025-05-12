@@ -1,15 +1,33 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
 {% block title %}About - Algorithm Pit{% endblock %}
 
 {% block content %}
-<main>
-  <div class="max-w-screen-xl mx-auto px-4">
-  <h2>about Algorithm Pit</h2>
-  
+<div class="max-w-screen-lg mx-auto mt-8 space-y-12">
+    <!-- Introduction Section -->
+    <section class="bg-gradient-to-r from-blue-600 to-blue-400 text-white p-8 rounded-lg shadow-lg">
+        <h1 class="text-4xl font-bold mb-4">About Algorithm Pit</h1>
+        <p class="text-lg">Learn more about our mission, vision, and the team behind Algorithm Pit.</p>
+    </section>
+
+    <!-- Placeholder Section 1 -->
+    <section class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-semibold mb-4">Our Mission</h2>
+        <p class="text-gray-700">Add your mission statement here. Explain what drives your platform and what you aim to achieve.</p>
+    </section>
+
+    <!-- Placeholder Section 2 -->
+    <section class="bg-gray-100 p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-semibold mb-4">Our Vision</h2>
+        <p class="text-gray-700">Add your vision here. Share your long-term goals and how you plan to impact the community.</p>
+    </section>
+
+    <!-- Placeholder Section 3 -->
+    <section class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-semibold mb-4">Meet the Team</h2>
+        <p class="text-gray-700">Introduce your team members here. Highlight their roles and contributions to the platform.</p>
+    </section>
 </div>
-  
-</main>
 {% endblock %}
 
 
