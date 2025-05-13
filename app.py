@@ -1,13 +1,68 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from uuid import uuid4
 from flask_socketio import SocketIO, emit, join_room
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from gomoku_ai import GomokuGame
 
 app = Flask(__name__)
+app.secret_key = 'supersecretkey'  # Required for Flask-Login
 socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app)
+
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+# Hardcoded user credentials
+users = {
+    'admin': generate_password_hash('algorithmpit')  # Ensure this is generated at runtime
+}
+
+class User(UserMixin):
+    def __init__(self, id):
+        self.id = id
+
+@login_manager.user_loader
+def load_user(user_id):
+    if user_id in users:
+        return User(user_id)
+    return None
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        if username in users:
+            print(f"Stored hash for {username}: {users[username]}")  # Debug log
+            print(f"Password hash matches: {check_password_hash(users[username], password)}")  # Debug log
+
+        if username in users and check_password_hash(users[username], password):
+            user = User(username)
+            login_user(user)
+            return jsonify({"message": "Login successful"})
+        else:
+            print("Invalid credentials")  # Debug log
+            return jsonify({"message": "Invalid credentials"}), 401
+
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    next_page = request.referrer or url_for('home')
+    return redirect(next_page)
+
+@app.route('/protected')
+@login_required
+def protected():
+    return jsonify({"message": f"Hello, {current_user.id}! This is a protected route."})
 
 @app.route('/')
 def home():
@@ -56,18 +111,18 @@ def handle_player_move(data):
     sid = request.sid
 
     if not game:
-        print("userid 出错")
-        emit('error', {'message': '无效 user_id'})
+        print("Invalid user_id")
+        emit('error', {'message': 'Invalid user_id'})
         return
 
     # Check if it's the player's turn
     if not game.is_player_turn:
-        emit('error', {'message': '请等待 AI 落子完成'})
+        emit('error', {'message': 'Please wait for the AI to complete its move'})
         return
 
     if not game.place_piece(x, y, 1):
-        print('落子在无效位置')
-        emit('error', {'message': '落子无效'})
+        print('Invalid move position')
+        emit('error', {'message': 'Invalid move'})
         return
 
     # Update the game state and switch turn to AI
@@ -90,7 +145,7 @@ def handle_player_move(data):
     socketio.start_background_task(_do_ai_move, user_id, sid)
 
 def _do_ai_move(user_id, sid):
-    """后台任务：计算 AI 落子并推送给指定 sid"""
+    """Background task: Calculate AI move and push to the specified sid"""
     game = sessions.get(user_id)
     if not game or game.winner != 0:
         return
@@ -113,8 +168,6 @@ def new_game(data):
         }
 
     emit('update', response)
-
-
 
 @app.route("/tank")
 def tank():
