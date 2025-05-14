@@ -31,17 +31,17 @@
             <!-- Navigation links -->
             <ul id="menu" class="hidden lg:flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-6 mt-4 lg:mt-0 items-center">
                 <li>
-                    <a href="{{ url_for('home') }}" class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-500 transition-colors duration-200 block text-lg font-medium">
+                    <a href="{{ url_for('main.home') }}" class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-500 transition-colors duration-200 block text-lg font-medium">
                         Home
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('games') }}" class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-500 transition-colors duration-200 block text-lg font-medium">
+                    <a href="{{ url_for('main.games') }}" class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-500 transition-colors duration-200 block text-lg font-medium">
                         Games
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('about') }}" class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-500 transition-colors duration-200 block text-lg font-medium">
+                    <a href="{{ url_for('main.about') }}" class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-500 transition-colors duration-200 block text-lg font-medium">
                         About
                     </a>
                 </li>
@@ -52,11 +52,11 @@
                     </span>
                 </li>
                 <li class="flex items-center">
-                    <a href="{{ url_for('logout') }}" class="px-2 py-1 rounded bg-red-600 text-white hover:bg-red-500 transition-colors duration-200 text-sm">Logout</a>
+                    <a href="{{ url_for('auth.logout') }}" class="px-2 py-1 rounded bg-red-600 text-white hover:bg-red-500 transition-colors duration-200 text-sm">Logout</a>
                 </li>
                 {% else %}
                 <li class="flex items-center">
-                    <a href="{{ url_for('login') }}" class="px-2 py-1 rounded bg-green-600 text-white hover:bg-green-500 transition-colors duration-200 text-sm">Login</a>
+                    <a href="{{ url_for('auth.login') }}" class="px-2 py-1 rounded bg-green-600 text-white hover:bg-green-500 transition-colors duration-200 text-sm">Login</a>
                 </li>
                 <li class="flex items-center">
                     <button onclick="alert('Registration is not available. Please contact the administrator.')" class="px-2 py-1 rounded bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200 text-sm">Register</button>
