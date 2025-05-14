@@ -59,7 +59,7 @@
                     <a href="{{ url_for('auth.login') }}" class="px-2 py-1 rounded bg-green-600 text-white hover:bg-green-500 transition-colors duration-200 text-sm">Login</a>
                 </li>
                 <li class="flex items-center">
-                    <button onclick="alert('Registration is not available. Please contact the administrator.')" class="px-2 py-1 rounded bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200 text-sm">Register</button>
+                    <a href="{{ url_for('auth.register') }}" class="px-2 py-1 rounded bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200 text-sm">Register</a>
                 </li>
                 {% endif %}
             </ul>
