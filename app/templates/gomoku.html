@@ -34,6 +34,17 @@
       <canvas id="board" width="600" height="600" class="mx-auto"></canvas>
       <br>
       <button type="button" onclick="newGame()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New Game</button>
+
+      <!-- AI Selection -->
+      <div class="mt-4">
+        <label for="aiSelect" class="block text-gray-700 font-medium mb-2">Select AI:</label>
+        <select id="aiSelect" class="block w-1/2 mx-auto border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+          {% for bot in bots %}
+          <option value="{{ bot[0] }}">{{ bot[1] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
       <div class="mt-4">
         <a href="/" class="text-blue-500 hover:underline">← Back to Homepage</a>
       </div>

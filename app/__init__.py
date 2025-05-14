@@ -17,9 +17,12 @@ def create_app():
 
     from .main import main_bp
     from .auth import auth_bp
+    from .upload import upload_bp
     from .gomoku import gomoku_bp
+    
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(upload_bp)
     app.register_blueprint(gomoku_bp)
 
     return app
