@@ -30,13 +30,41 @@
 
     let queue = []; // Queue to store images
     const positions = [
-        { x: 200, y: 300 }, // Left
-        { x: 400, y: 300 }, // Middle
-        { x: 600, y: 300 }  // Right
+        { x: 350, y: 420 }, // Left
+        { x: 400, y: 420 }, // Middle
+        { x: 450, y: 420 }  // Right
     ];
 
+    const bottomPositions = [
+        { x: 150, y: 520 }, // Bottom-left
+        { x: 250, y: 520 }, // Bottom-center-left
+        { x: 350, y: 520 }, // Bottom-center
+        { x: 450, y: 520 }, // Bottom-center-right
+        { x: 550, y: 520 }, // Bottom-right
+        { x: 650, y: 520 }  // Bottom-far-right
+    ];
+
+    let dImage = null; // Track the image at D position
+    let fImage = null; // Track the image at F position
+    let currentCenterImage = null; // Track the current image in the center
+    let centerImageKey = null; // Track the key of the current center image
+
     function preload() {
-        // Load 3 images
+        // Load 10 images for all possible queue states
+        const queueStates = ['QQQ', 'QQW', 'QQE', 'QWW', 'QWE', 'QEE', 'WWW', 'WWE', 'WEE', 'EEE'];
+        queueStates.forEach(state => {
+            this.load.image(state, `/static/injoker/${state}.png`);
+        });
+
+        // Load 6 images for the bottom row
+        this.load.image('bottom1', '/static/injoker/Q.png');
+        this.load.image('bottom2', '/static/injoker/W.png');
+        this.load.image('bottom3', '/static/injoker/E.png');
+        this.load.image('bottom4', '/static/injoker/invoked spell.png');
+        this.load.image('bottom5', '/static/injoker/invoked spell.png');
+        this.load.image('bottom6', '/static/injoker/invoke.png');
+
+        // Load 3 images for the queue
         this.load.image('imageQ', '/static/injoker/Q.png');
         this.load.image('imageW', '/static/injoker/W.png');
         this.load.image('imageE', '/static/injoker/E.png');
@@ -47,6 +75,55 @@
         this.input.keyboard.on('keydown-Q', () => handleKeyPress('Q', this));
         this.input.keyboard.on('keydown-W', () => handleKeyPress('W', this));
         this.input.keyboard.on('keydown-E', () => handleKeyPress('E', this));
+        this.input.keyboard.on('keydown-R', () => updateDPosition(this));
+        this.input.keyboard.on('keydown-D', () => checkMatch('D', this));
+        this.input.keyboard.on('keydown-F', () => checkMatch('F', this));
+
+        // Display 6 images at the bottom of the canvas with text labels
+        this.add.image(bottomPositions[0].x, bottomPositions[0].y, 'bottom1').setScale(0.5);
+        this.add.text(bottomPositions[0].x - 30, bottomPositions[0].y - 40, 'Q', { 
+            font: '16px Arial', 
+            fill: '#ffffff', 
+            shadow: { offsetX: 3, offsetY: 3, color: '#000000', blur: 4, stroke: true, fill: true }
+        });
+
+        this.add.image(bottomPositions[1].x, bottomPositions[1].y, 'bottom2').setScale(0.5);
+        this.add.text(bottomPositions[1].x - 30, bottomPositions[1].y - 40, 'W', { 
+            font: '16px Arial', 
+            fill: '#ffffff', 
+            shadow: { offsetX: 3, offsetY: 3, color: '#000000', blur: 4, stroke: true, fill: true }
+        });
+
+        this.add.image(bottomPositions[2].x, bottomPositions[2].y, 'bottom3').setScale(0.5);
+        this.add.text(bottomPositions[2].x - 30, bottomPositions[2].y - 40, 'E', { 
+            font: '16px Arial', 
+            fill: '#ffffff', 
+            shadow: { offsetX: 3, offsetY: 3, color: '#000000', blur: 4, stroke: true, fill: true }
+        });
+
+        this.add.image(bottomPositions[3].x, bottomPositions[3].y, 'bottom4').setScale(0.5);
+        this.add.text(bottomPositions[3].x - 30, bottomPositions[3].y - 40, 'D', { 
+            font: '16px Arial', 
+            fill: '#ffffff', 
+            shadow: { offsetX: 3, offsetY: 3, color: '#000000', blur: 4, stroke: true, fill: true }
+        });
+
+        this.add.image(bottomPositions[4].x, bottomPositions[4].y, 'bottom5').setScale(0.5);
+        this.add.text(bottomPositions[4].x - 30, bottomPositions[4].y - 40, 'F', { 
+            font: '16px Arial', 
+            fill: '#ffffff', 
+            shadow: { offsetX: 3, offsetY: 3, color: '#000000', blur: 4, stroke: true, fill: true }
+        });
+
+        this.add.image(bottomPositions[5].x, bottomPositions[5].y, 'bottom6').setScale(0.5);
+        this.add.text(bottomPositions[5].x - 30, bottomPositions[5].y - 40, 'R', { 
+            font: '16px Arial', 
+            fill: '#ffffff', 
+            shadow: { offsetX: 3, offsetY: 3, color: '#000000', blur: 4, stroke: true, fill: true }
+        });
+
+        // Display a random image in the center
+        displayRandomCenterImage(this);
     }
 
     function update() {
@@ -54,16 +131,23 @@
     }
 
     function handleKeyPress(key, scene) {
-        console.log(`Key pressed: ${key}`);
+        // console.log(`Key pressed: ${key}`);
 
         // Determine the image key based on the pressed key
         let imageKey = null;
-        if (key === 'Q') {
-            imageKey = 'imageQ';
-        } else if (key === 'W') {
-            imageKey = 'imageW';
-        } else if (key === 'E') {
-            imageKey = 'imageE';
+        switch (key) {
+            case 'Q':
+                imageKey = 'imageQ';
+                break;
+            case 'W':
+                imageKey = 'imageW';
+                break;
+            case 'E':
+                imageKey = 'imageE';
+                break;
+            default:
+                console.log(`Unhandled key: ${key}`);
+                return; // Exit the function if the key is not handled
         }
 
         if (imageKey) {
@@ -74,14 +158,14 @@
     function addImageToQueue(imageKey, scene) {
         if (queue.length < 3) {
             // If the queue is not full, add the image to the next available position
-            const newImage = scene.add.image(positions[queue.length].x, positions[queue.length].y, imageKey);
+            const newImage = scene.add.image(positions[queue.length].x, positions[queue.length].y, imageKey).setScale(0.25);
             queue.push(newImage);
         } else {
             // If the queue is full, remove the front image and add the new image to the rightmost position
             const removedImage = queue.shift(); // Remove the front image
             removedImage.destroy(); // Destroy the removed image
 
-            const newImage = scene.add.image(positions[2].x, positions[2].y, imageKey); // Add to the rightmost position
+            const newImage = scene.add.image(positions[2].x, positions[2].y, imageKey).setScale(0.25); // Add to the rightmost position
             queue.push(newImage);
         }
 
@@ -89,6 +173,102 @@
         queue.forEach((image, index) => {
             image.setPosition(positions[index].x, positions[index].y);
         });
+    }
+
+    function displayQueueContents() {
+        if (queue.length === 0) {
+            console.log("The queue is empty.");
+        } else {
+            console.log("Current queue contents (sorted):");
+
+            // Create a mapping for sorting based on Q, W, E order
+            const sortOrder = { imageQ: 1, imageW: 2, imageE: 3 };
+
+            // Extract and sort the queue contents
+            const sortedQueue = queue
+                .map(image => image.texture.key) // Extract texture keys
+                .sort((a, b) => (sortOrder[a] || 99) - (sortOrder[b] || 99)); // Sort based on predefined order
+
+            // Output the sorted queue
+            sortedQueue.forEach((key, index) => {
+                console.log(`Position ${index + 1}: ${key}`);
+            });
+        }
+    }
+
+    function updateDPosition(scene) {
+        if (queue.length > 0) {
+            // Create a mapping for sorting based on Q, W, E order
+            const sortOrder = { imageQ: 1, imageW: 2, imageE: 3 };
+
+            // Extract and sort the queue contents
+            const sortedQueue = queue
+                .map(image => image.texture.key) // Extract texture keys
+                .sort((a, b) => (sortOrder[a] || 99) - (sortOrder[b] || 99)); // Sort based on predefined order
+
+            // Combine the sorted keys into a single string (e.g., "QQW")
+            const queueKey = sortedQueue.map(key => key.replace('image', '')).join('');
+
+            // Check if the corresponding image exists
+            if (scene.textures.exists(queueKey)) {
+                // If the new image is the same as the current D image, return early
+                if (dImage && dImage.texture.key === queueKey) {
+                    console.log(`The new image (${queueKey}) is the same as the current D image. No changes made.`);
+                    return;
+                }
+
+                // If D position already has an image, move it to F position
+                if (dImage) {
+                    if (fImage) {
+                        fImage.destroy(); // Remove the existing image at F position
+                    }
+                    fImage = scene.add.image(bottomPositions[4].x, bottomPositions[4].y, dImage.texture.key).setScale(0.5);
+                    dImage.destroy(); // Remove the image from D position
+                }
+
+                // Place the new image at D position
+                dImage = scene.add.image(bottomPositions[3].x, bottomPositions[3].y, queueKey).setScale(0.5);
+            } else {
+                console.log(`No image found for queue state: ${queueKey}`);
+            }
+        } else {
+            console.log("The queue is empty. No image to display at D position.");
+        }
+    }
+
+    function displayRandomCenterImage(scene) {
+        // Remove the current center image if it exists
+        if (currentCenterImage) {
+            currentCenterImage.destroy();
+        }
+
+        // Randomly select an image key from the queue states
+        const queueStates = ['QQQ', 'QQW', 'QQE', 'QWW', 'QWE', 'QEE', 'WWW', 'WWE', 'WEE', 'EEE'];
+        centerImageKey = queueStates[Math.floor(Math.random() * queueStates.length)];
+
+        // Display the selected image in the center of the canvas
+        currentCenterImage = scene.add.image(400, 300, centerImageKey).setScale(0.5);
+    }
+
+    function checkMatch(key, scene) {
+        // Determine the expected image key based on the pressed key
+        let expectedImageKey = null;
+        if (key === 'D') {
+            expectedImageKey = dImage ? dImage.texture.key : null;
+        } else if (key === 'F') {
+            expectedImageKey = fImage ? fImage.texture.key : null;
+        }
+
+        // Check if the expected image matches the center image
+        if (expectedImageKey && expectedImageKey === centerImageKey) {
+            console.log(`Success! ${key} matches the center image.`);
+
+            // Schedule a new random image to appear in 1~10 seconds
+            const delay = Math.floor(Math.random() * 10 + 1) * 1000; // Random delay between 1 and 10 seconds
+            setTimeout(() => displayRandomCenterImage(scene), delay);
+        } else {
+            console.log(`Failure! ${key} does not match the center image.`);
+        }
     }
 </script>
 {% endblock %}
