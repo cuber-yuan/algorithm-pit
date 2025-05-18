@@ -6,7 +6,7 @@
 <div class="max-w-screen-lg mx-auto mt-8">
     <h1 class="text-3xl font-bold text-center mb-6">Injoker</h1>
     <p class="text-center text-gray-700 mb-8">
-        Master the art of playing Invoker in Dota 2! Practice quick spell combinations, unleash devastating abilities. Hone your skills to become the true Invoker, not an "Injoker."
+        Master the art of playing Invoker in Dota 2! Practice quick spell combinations, unleash devastating abilities. Hone your skills to become the true Invoker, not an "Injoker".
     </p>
     <div id="phaser-container" style="width: 800px; height: 600px; margin: 0 auto;"></div>
 </div>
@@ -319,8 +319,25 @@
         const queueStates = ['QQQ', 'QQW', 'QQE', 'QWW', 'QWE', 'QEE', 'WWW', 'WWE', 'WEE', 'EEE'];
         centerImageKey = queueStates[Math.floor(Math.random() * queueStates.length)];
 
-        // Display the selected image in the center of the canvas
-        currentCenterImage = scene.add.image(400, 230, centerImageKey).setScale(1.5).setDepth(1);
+        // Create the new image with an initial scale of 0 (invisible)
+        currentCenterImage = scene.add.image(400, 230, centerImageKey).setScale(0).setDepth(1);
+
+        // Animate the image: 0 -> 2 -> 1.5 scale with speed increasing
+        scene.tweens.add({
+            targets: currentCenterImage,
+            scale: 2, // Scale up to 2
+            duration: 100, // First phase duration
+            ease: 'Power2', // Easing function for smooth animation
+            onComplete: () => {
+                // Second phase: Scale down to 1.5
+                scene.tweens.add({
+                    targets: currentCenterImage,
+                    scale: 1.5, // Final scale
+                    duration: 50, // Second phase duration
+                    ease: 'Power2' // Easing function for smooth animation
+                });
+            }
+        });
 
         // Record the start time for timing the match
         startTime = performance.now();
