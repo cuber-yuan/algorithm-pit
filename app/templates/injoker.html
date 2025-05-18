@@ -74,6 +74,10 @@
         this.load.image('imageQ', '/static/injoker/Q.png');
         this.load.image('imageW', '/static/injoker/W.png');
         this.load.image('imageE', '/static/injoker/E.png');
+
+        // Load the invoke.mp3 audio file
+        // https://dota2.fandom.com/wiki/Invoker/Sounds
+        this.load.audio('invokeSound', '/static/injoker/invoke.mp3');
     }
 
     function create() {
@@ -81,7 +85,10 @@
         this.input.keyboard.on('keydown-Q', () => handleKeyPress('Q', this));
         this.input.keyboard.on('keydown-W', () => handleKeyPress('W', this));
         this.input.keyboard.on('keydown-E', () => handleKeyPress('E', this));
-        this.input.keyboard.on('keydown-R', () => updateDPosition(this));
+        this.input.keyboard.on('keydown-R', () => {
+            updateDPosition(this);
+            // Removed invoke.mp3 sound playback
+        });
         this.input.keyboard.on('keydown-D', () => checkMatch('D', this));
         this.input.keyboard.on('keydown-F', () => checkMatch('F', this));
 
@@ -284,6 +291,10 @@
             if (statusText) {
                 statusText.setText(`Skill released successfully in ${elapsedTime.toFixed(3)} seconds`);
             }
+
+            // Play the invoke.mp3 sound
+            const invokeSound = scene.sound.add('invokeSound');
+            invokeSound.play();
 
             // Update total time and match count
             totalTime += elapsedTime;
