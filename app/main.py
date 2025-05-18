@@ -46,3 +46,7 @@ def tank():
 @main_bp.route('/catking')
 def catking():
     return render_template('catking.html')
+
+@main_bp.route('/injoker')
+def injoker():
+    return render_template('injoker.html')

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Injoker - Algorithm Pit{% endblock %}
+
+{% block content %}
+<div class="max-w-screen-lg mx-auto mt-8">
+    <h1 class="text-3xl font-bold text-center mb-6">Injoker</h1>
+    <p class="text-center text-gray-700 mb-8">
+        Master the art of playing Invoker in Dota 2! Practice quick spell combinations, unleash devastating abilities. Hone your skills to become the true Invoker, not an "Injoker."
+    </p>
+    <div id="phaser-container" style="width: 800px; height: 600px; margin: 0 auto;"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+<script>
+    const config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        parent: 'phaser-container',
+        backgroundColor: '#1e293b',
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        }
+    };
+
+    const game = new Phaser.Game(config);
+
+    let queue = []; // Queue to store images
+    const positions = [
+        { x: 200, y: 300 }, // Left
+        { x: 400, y: 300 }, // Middle
+        { x: 600, y: 300 }  // Right
+    ];
+
+    function preload() {
+        // Load 3 images
+        this.load.image('imageQ', '/static/injoker/Q.png');
+        this.load.image('imageW', '/static/injoker/W.png');
+        this.load.image('imageE', '/static/injoker/E.png');
+    }
+
+    function create() {
+        // Add keyboard listeners
+        this.input.keyboard.on('keydown-Q', () => handleKeyPress('Q', this));
+        this.input.keyboard.on('keydown-W', () => handleKeyPress('W', this));
+        this.input.keyboard.on('keydown-E', () => handleKeyPress('E', this));
+    }
+
+    function update() {
+        // Update logic if needed
+    }
+
+    function handleKeyPress(key, scene) {
+        console.log(`Key pressed: ${key}`);
+
+        // Determine the image key based on the pressed key
+        let imageKey = null;
+        if (key === 'Q') {
+            imageKey = 'imageQ';
+        } else if (key === 'W') {
+            imageKey = 'imageW';
+        } else if (key === 'E') {
+            imageKey = 'imageE';
+        }
+
+        if (imageKey) {
+            addImageToQueue(imageKey, scene);
+        }
+    }
+
+    function addImageToQueue(imageKey, scene) {
+        if (queue.length < 3) {
+            // If the queue is not full, add the image to the next available position
+            const newImage = scene.add.image(positions[queue.length].x, positions[queue.length].y, imageKey);
+            queue.push(newImage);
+        } else {
+            // If the queue is full, remove the front image and add the new image to the rightmost position
+            const removedImage = queue.shift(); // Remove the front image
+            removedImage.destroy(); // Destroy the removed image
+
+            const newImage = scene.add.image(positions[2].x, positions[2].y, imageKey); // Add to the rightmost position
+            queue.push(newImage);
+        }
+
+        // Reposition all images in the queue
+        queue.forEach((image, index) => {
+            image.setPosition(positions[index].x, positions[index].y);
+        });
+    }
+</script>
+{% endblock %}
