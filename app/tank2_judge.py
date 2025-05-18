@@ -527,6 +527,7 @@ class TankBotInterface:
                 
             }
             print(json.dumps(output))
+            return json.dumps(output)
         else:
             # 发送中间回合动作请求，可以按需求扩展
             output = {
@@ -536,3 +537,4 @@ class TankBotInterface:
                 # 这里可加更多运行时信息
             }
             print(json.dumps(output))
+            return json.dumps(output)
