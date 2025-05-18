@@ -9,6 +9,10 @@
         Master the art of playing Invoker in Dota 2! Practice quick spell combinations, unleash devastating abilities. Hone your skills to become the true Invoker, not an "Injoker".
     </p>
     <div id="phaser-container" style="width: 800px; height: 600px; margin: 0 auto;"></div>
+    <!-- Add the spells.png image below the canvas -->
+    <div class="text-center mt-6">
+        <img src="/static/injoker/spells.png" alt="Spells" style="max-width: 100%; height: auto; margin: 0 auto; display: block;">
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
@@ -289,7 +293,7 @@
 
             // Update the status text to show success and elapsed time
             if (statusText) {
-                statusText.setText(`Skill released successfully in ${elapsedTime.toFixed(3)} seconds`);
+                statusText.setText(`Skill released successfully in ${elapsedTime.toFixed(2)} seconds`);
             }
 
             // Play the invoke.mp3 sound
