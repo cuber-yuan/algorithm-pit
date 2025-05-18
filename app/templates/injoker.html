@@ -48,6 +48,8 @@
     let fImage = null; // Track the image at F position
     let currentCenterImage = null; // Track the current image in the center
     let centerImageKey = null; // Track the key of the current center image
+    let statusText = null; // Track the status text displayed on the canvas
+    let startTime = null; // Track the start time for timing the match
 
     function preload() {
         // Load 10 images for all possible queue states
@@ -122,8 +124,17 @@
             shadow: { offsetX: 3, offsetY: 3, color: '#000000', blur: 4, stroke: true, fill: true }
         });
 
-        // Display a random image in the center
-        displayRandomCenterImage(this);
+        // Add a status text at the top of the canvas
+        statusText = this.add.text(400, 40, 'Waiting for battle...', {
+            font: '20px Arial',
+            fill: '#ffffff',
+            align: 'center'
+        }).setOrigin(0.5);
+
+        // Wait 5 seconds before generating the random image
+        setTimeout(() => {
+            displayRandomCenterImage(this);
+        }, 5000);
     }
 
     function update() {
@@ -236,20 +247,6 @@
         }
     }
 
-    function displayRandomCenterImage(scene) {
-        // Remove the current center image if it exists
-        if (currentCenterImage) {
-            currentCenterImage.destroy();
-        }
-
-        // Randomly select an image key from the queue states
-        const queueStates = ['QQQ', 'QQW', 'QQE', 'QWW', 'QWE', 'QEE', 'WWW', 'WWE', 'WEE', 'EEE'];
-        centerImageKey = queueStates[Math.floor(Math.random() * queueStates.length)];
-
-        // Display the selected image in the center of the canvas
-        currentCenterImage = scene.add.image(400, 300, centerImageKey).setScale(0.5);
-    }
-
     function checkMatch(key, scene) {
         // Determine the expected image key based on the pressed key
         let expectedImageKey = null;
@@ -263,11 +260,46 @@
         if (expectedImageKey && expectedImageKey === centerImageKey) {
             console.log(`Success! ${key} matches the center image.`);
 
+            // Calculate the elapsed time
+            const elapsedTime = (performance.now() - startTime) / 1000;
+
+            // Update the status text to show success and elapsed time
+            if (statusText) {
+                statusText.setText(`Skill released successfully in ${elapsedTime.toFixed(3)} seconds`);
+            }
+
             // Schedule a new random image to appear in 1~10 seconds
             const delay = Math.floor(Math.random() * 10 + 1) * 1000; // Random delay between 1 and 10 seconds
-            setTimeout(() => displayRandomCenterImage(scene), delay);
+            setTimeout(() => {
+                displayRandomCenterImage(scene);
+                if (statusText) {
+                    statusText.setText('Use this skill to defeat the opponent');
+                }
+            }, delay);
         } else {
             console.log(`Failure! ${key} does not match the center image.`);
+        }
+    }
+
+    function displayRandomCenterImage(scene) {
+        // Remove the current center image if it exists
+        if (currentCenterImage) {
+            currentCenterImage.destroy();
+        }
+
+        // Randomly select an image key from the queue states
+        const queueStates = ['QQQ', 'QQW', 'QQE', 'QWW', 'QWE', 'QEE', 'WWW', 'WWE', 'WEE', 'EEE'];
+        centerImageKey = queueStates[Math.floor(Math.random() * queueStates.length)];
+
+        // Display the selected image in the center of the canvas
+        currentCenterImage = scene.add.image(400, 200, centerImageKey).setScale(1.5);
+
+        // Record the start time for timing the match
+        startTime = performance.now();
+
+        // Update the status text
+        if (statusText) {
+            statusText.setText('Use this skill to defeat the opponent');
         }
     }
 </script>
