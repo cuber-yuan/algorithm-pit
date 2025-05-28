@@ -1,34 +1,27 @@
-# 忽略 node_modules 依赖包目录
 node_modules/
 
-# 忽略日志文件
 *.log
 npm-debug.log*
 
-# 忽略操作系统生成的临时文件
 .DS_Store
 Thumbs.db
 
-# 忽略环境配置文件（包含敏感信息）
 .env
 .env.local
 
-# 忽略编译输出目录（如前端构建）
 dist/
 build/
 
-# 忽略 IDE 或编辑器生成的配置文件
 .vscode/
 .idea/
 
-# 忽略临时备份文件
 *.swp
 *.bak
 *.tmp
 
-# 忽略测试覆盖率结果
 coverage/
 
-# Python 缓存文件
 __pycache__/
 *.py[cod]
+
+test.py
