@@ -4,44 +4,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Algorithm Pit{% endblock %}</title>
-    <!-- Add favicon -->
+    <title>{% block title %}Legend Zone{% endblock %}</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo.svg') }}">
-    <!-- Load Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .layout-main {
+            flex: 1;
+            display: flex;
+            width: 100%;
+        }
+
+        .sider-left {
+            width: 240px;
+            background: #f3f4f6;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+            overflow-y: auto;
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+            min-height: 400px;
+        }
+
+        .sider-right {
+            width: 240px;
+            background: #f3f4f6;
+            box-shadow: -2px 0 8px rgba(0, 0, 0, 0.04);
+            overflow-y: auto;
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+            min-height: 400px;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 24px;
+        }
+    </style>
 </head>
 
 <body class="bg-gray-100 text-gray-900">
-    <!-- Tailwind Navbar -->
+    {% block header %}
+    <!-- Header content -->
     <nav class="bg-gradient-to-r from-blue-800 to-blue-600 text-white shadow-lg">
         <div class="max-w-screen-xl mx-auto px-4 py-4 flex items-center justify-between">
-            <!-- Logo -->
             <div class="flex items-center space-x-3">
-                <img src="{{ url_for('static', filename='logo.svg') }}" alt="Algorithm Pit Logo" class="h-10 w-10">
-                <div class="text-2xl font-bold tracking-wide">Algorithm Pit</div>
+                <img src="{{ url_for('static', filename='logo.svg') }}" alt="Legend Zone Logo" class="h-10 w-10">
+                <div class="text-2xl font-bold tracking-wide">Legend Zone</div>
             </div>
 
             <!-- Hamburger button (hidden on large screens) -->
-            <button id="menu-toggle" class="lg:hidden bg-white text-blue-800 hover:bg-gray-200 focus:outline-none p-2 rounded">
+            <button id="menu-toggle"
+                class="lg:hidden bg-white text-blue-800 hover:bg-gray-200 focus:outline-none p-2 rounded">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
             </button>
 
             <!-- Navigation links -->
-            <ul id="menu" class="hidden lg:flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-6 mt-4 lg:mt-0 items-center">
+            <ul id="menu"
+                class="hidden lg:flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-6 mt-4 lg:mt-0 items-center">
                 <li>
-                    <a href="{{ url_for('main.home') }}" class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-500 transition-colors duration-200 block text-lg font-medium">
+                    <a href="{{ url_for('main.home') }}"
+                        class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-500 transition-colors duration-200 block text-lg font-medium">
                         Home
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('main.games') }}" class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-500 transition-colors duration-200 block text-lg font-medium">
+                    <a href="{{ url_for('main.games') }}"
+                        class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-500 transition-colors duration-200 block text-lg font-medium">
                         Games
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('main.about') }}" class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-500 transition-colors duration-200 block text-lg font-medium">
+                    <a href="{{ url_for('main.about') }}"
+                        class="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-500 transition-colors duration-200 block text-lg font-medium">
                         About
                     </a>
                 </li>
@@ -52,36 +95,61 @@
                     </span>
                 </li>
                 <li class="flex items-center">
-                    <a href="{{ url_for('auth.logout') }}" class="px-2 py-1 rounded bg-red-600 text-white hover:bg-red-500 transition-colors duration-200 text-sm">Logout</a>
+                    <a href="{{ url_for('auth.logout') }}"
+                        class="px-2 py-1 rounded bg-red-600 text-white hover:bg-red-500 transition-colors duration-200 text-sm">Logout</a>
                 </li>
                 {% else %}
                 <li class="flex items-center">
-                    <a href="{{ url_for('auth.login') }}" class="px-2 py-1 rounded bg-green-600 text-white hover:bg-green-500 transition-colors duration-200 text-sm">Login</a>
+                    <a href="{{ url_for('auth.login') }}"
+                        class="px-2 py-1 rounded bg-green-600 text-white hover:bg-green-500 transition-colors duration-200 text-sm">Login</a>
                 </li>
                 <li class="flex items-center">
-                    <a href="{{ url_for('auth.register') }}" class="px-2 py-1 rounded bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200 text-sm">Register</a>
+                    <a href="{{ url_for('auth.register') }}"
+                        class="px-2 py-1 rounded bg-gray-600 text-white hover:bg-gray-500 transition-colors duration-200 text-sm">Register</a>
                 </li>
                 {% endif %}
             </ul>
         </div>
     </nav>
+    {% endblock %}
 
-    <!-- Page content -->
-    <div class="p-6 min-h-[calc(100vh-12rem)] max-w-screen-lg mx-auto">
-        {% block content %}{% endblock %}
+    <div class="layout-main">
+        
+        <aside class="sider-left">
+            {% block sidebar_left %}
+            <div style="padding: 2rem;">
+                <h2 style="font-size: 1.25rem; font-weight: bold;">Left Sidebar</h2>
+                <ul style="margin-top: 1rem;">
+                    <li><a href="/" style="color: #2563eb;">Home</a></li>
+                    <li><a href="/about" style="color: #2563eb;">About</a></li>
+                    <li><a href="/contact" style="color: #2563eb;">Contact</a></li>
+                </ul>
+            </div>
+            {% endblock %}
+        </aside>
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+        <aside class="sider-right">
+            {% block sidebar_right %}
+            <div style="padding: 2rem;">
+                <h2 style="font-size: 1.25rem; font-weight: bold;">Right Sidebar</h2>
+                <ul style="margin-top: 1rem;">
+                    <li><a href="#" style="color: #2563eb;">Link 1</a></li>
+                    <li><a href="#" style="color: #2563eb;">Link 2</a></li>
+                </ul>
+            </div>
+            {% endblock %}
+        </aside>
     </div>
 
-    <!-- Footer -->
+    {% block footer %}
     <footer class="bg-gray-800 text-white py-6 mt-10">
         <div class="max-w-screen-xl mx-auto px-4 text-center">
-            <p class="text-sm">&copy; 2025 Algorithm Pit. All rights reserved.</p>
-            <p class="text-sm mt-2">
-                <a href="/about" class="text-blue-400 hover:underline">About Us</a> |
-                <a href="/contact" class="text-blue-400 hover:underline">Contact</a> |
-                <a href="/privacy" class="text-blue-400 hover:underline">Privacy Policy</a>
-            </p>
+            <p class="text-sm">&copy; 2025 Legend Zone. All rights reserved.</p>
         </div>
     </footer>
+    {% endblock %}
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {

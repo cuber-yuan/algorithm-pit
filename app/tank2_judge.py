@@ -233,7 +233,7 @@ class TankField:
         for log in sorted(to_destroy):
             item = log.item
             if item == FieldItem.BASE:
-                side = BLUE if log.x == BASE_X[0] else RED
+                side = GameResult.BLUE if log.x == BASE_X[0] else GameResult.RED
                 self.base_alive[side] = False
             elif item in (FieldItem.BLUE0, FieldItem.BLUE1, FieldItem.RED0, FieldItem.RED1):
                 self._destroy_tank(get_tank_side(item), get_tank_id(item))

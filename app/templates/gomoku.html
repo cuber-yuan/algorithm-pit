@@ -1,6 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}Gomoku - Algorithm Pit{% endblock %}
+{% block title %}Gomoku - Legend Zone{% endblock %}
+
+{% block sidebar_left %}
+<div style="padding: 2rem;">
+  <h2 style="font-size: 1.25rem; font-weight: bold;">Black</h2>
+  <label for="aiSelectBlack" class="block text-gray-700 font-medium mb-2 mt-4">Select Black:</label>
+  <select id="aiSelectBlack" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-200 cursor-not-allowed" disabled>
+    <option value="human">Human</option>
+    {% for bot in bots %}
+    <option value="{{ bot[0] }}">{{ bot[1] }}</option>
+    {% endfor %}
+  </select>
+</div>
+{% endblock %}
+
+{% block sidebar_right %}
+<div style="padding: 2rem;">
+  <h2 style="font-size: 1.25rem; font-weight: bold;">White</h2>
+  <label for="aiSelectWhite" class="block text-gray-700 font-medium mb-2 mt-4">Select White:</label>
+  <select id="aiSelectWhite" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+    
+    {% for bot in bots %}
+    <option value="{{ bot[0] }}">{{ bot[1] }}</option>
+    {% endfor %}
+  </select>
+</div>
+{% endblock %}
 
 {% block content %}
 <!-- <script src="{{ url_for('static', filename='index.js') }}"></script> -->
@@ -14,19 +40,13 @@
 </style>
 <div class="bg-gray-100 py-10">
   <div class="max-w-screen-xl mx-auto px-4">
-    <!-- Header Section -->
+    <!-- Header Section
     <header class="text-center mb-8">
-      <h1 class="text-4xl font-bold text-gray-800">Gomoku: Play Against AI</h1>
-      <p class="text-lg text-gray-600 mt-2">Challenge yourself in this classic strategy game. Align five stones in a row to win!</p>
-    </header>
+      <h1 class="text-4xl font-bold text-gray-800">Gomoku</h1>
+      
+    </header> -->
 
-    <!-- Game Description Section -->
-    <section class="bg-white p-6 rounded-lg shadow-md mb-8">
-      <h2 class="text-2xl font-semibold text-gray-800 mb-4">About Gomoku</h2>
-      <p class="text-gray-700 leading-relaxed">
-        Gomoku, also known as "Five in a Row," is a traditional board game that has been enjoyed for centuries. The rules are simple yet the strategy can be complex, making it a favorite for players of all ages. The goal is to place five of your stones in a row—horizontally, vertically, or diagonally—before your opponent does.
-      </p>
-    </section>
+    
 
     <!-- Game Canvas Section -->
     <div class="bg-white p-6 rounded-lg shadow-md text-center">
@@ -35,20 +55,14 @@
       <br>
       <button type="button" onclick="newGame()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New Game</button>
 
-      <!-- AI Selection -->
-      <div class="mt-4">
-        <label for="aiSelect" class="block text-gray-700 font-medium mb-2">Select AI:</label>
-        <select id="aiSelect" class="block w-1/2 mx-auto border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-          {% for bot in bots %}
-          <option value="{{ bot[0] }}">{{ bot[1] }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div class="mt-4">
-        <a href="/" class="text-blue-500 hover:underline">← Back to Homepage</a>
-      </div>
     </div>
+
+    <!-- Game Description Section -->
+    <section class="bg-white p-6 rounded-lg shadow-md mb-8">
+      <p class="text-gray-700 leading-relaxed">
+        Gomoku, also known as "Five in a Row," is a traditional board game that has been enjoyed for centuries. The rules are simple yet the strategy can be complex, making it a favorite for players of all ages. The goal is to place five of your stones in a row—horizontally, vertically, or diagonally—before your opponent does.
+      </p>
+    </section>
   </div>
 </div>
 
@@ -76,7 +90,7 @@
     board = data.board;
     drawBoard();
     if (data.winner) {
-      alert((data.winner === 1 ? 'you' : 'AI') + ' win！');
+      alert((data.winner === 1 ? 'you' : 'AI') + ' win!');
     }
   });
 
@@ -87,7 +101,7 @@
   function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 画网格线
+    // Draw grid lines
     for (let i = 0; i < SIZE; i++) {
       ctx.beginPath();
       ctx.moveTo(GRID / 2, GRID / 2 + i * GRID);
@@ -100,7 +114,7 @@
       ctx.stroke();
     }
 
-    // 绘制五个星位点
+    // Draw five star points
     const starPoints = [
       [3, 3], [3, 11], [7, 7], [11, 3], [11, 11]
     ];
@@ -108,7 +122,7 @@
       drawStarPoint(x, y);
     }
 
-    // 绘制已有棋子
+    // Draw existing stones
     for (let i = 0; i < SIZE; i++) {
       for (let j = 0; j < SIZE; j++) {
         if (board[i][j] !== 0) {
@@ -118,11 +132,11 @@
     }
   }
 
-  // 新增：绘制星位点
+  // Draw star point
   function drawStarPoint(i, j) {
     const x = GRID / 2 + i * GRID;
     const y = GRID / 2 + j * GRID;
-    const r = 5; // 星位点半径
+    const r = 5;
 
     ctx.beginPath();
     ctx.arc(x, y, r, 0, 2 * Math.PI);
@@ -158,20 +172,14 @@
   }
 
   function testcallback(data) {
-    consloe.print(data)
+    console.log(data)
   }
-
-
-
 
   canvas.addEventListener("click", (e) => {
     if (gameOver) return;
     let x = Math.floor(e.offsetX / GRID);
     let y = Math.floor(e.offsetY / GRID);
     socket.emit('player_move', { user_id: userId, x: x, y: y });
-
-
-
   });
 
   drawBoard();
