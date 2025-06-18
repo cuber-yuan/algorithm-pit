@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Gomoku - Legend Zone{% endblock %}
+{% block title %}Gomoku{% endblock %}
 
 {% block sidebar_left %}
+<aside class="sider-left">
 <div style="padding: 2rem;">
   <h2 style="font-size: 1.25rem; font-weight: bold;">Black</h2>
   <label for="aiSelectBlack" class="block text-gray-700 font-medium mb-2 mt-4">Select Black:</label>
@@ -13,9 +14,11 @@
     {% endfor %}
   </select>
 </div>
+</aside>
 {% endblock %}
 
 {% block sidebar_right %}
+<aside class="sider-left">
 <div style="padding: 2rem;">
   <h2 style="font-size: 1.25rem; font-weight: bold;">White</h2>
   <label for="aiSelectWhite" class="block text-gray-700 font-medium mb-2 mt-4">Select White:</label>
@@ -26,6 +29,7 @@
     {% endfor %}
   </select>
 </div>
+</aside>
 {% endblock %}
 
 {% block content %}
