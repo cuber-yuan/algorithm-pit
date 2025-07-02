@@ -60,7 +60,6 @@ def chat():
 @main_bp.route('/chat/messages')
 def chat_messages():
     clean_expired_messages()
-    # 只返回需要展示的字段
     return jsonify([
         {
             "user": msg["user"],
