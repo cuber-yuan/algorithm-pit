@@ -46,7 +46,43 @@
     {% endif %}
 </div>
 <script>
-{% if current_user.is_authenticated %}
+// Periodically fetch chat messages and update chat history
+function fetchMessages() {
+    fetch('{{ url_for("main.chat_messages") }}')
+        .then(response => response.json())
+        .then(data => {
+            const chatHistory = document.getElementById('chat-history');
+            if (!chatHistory) return;
+            chatHistory.innerHTML = '';
+            data.forEach(msg => {
+                const msgDiv = document.createElement('div');
+                // Highlight messages sent by the current user
+                {% if current_user.is_authenticated %}
+                if (msg.user === "{{ current_user.get_id() }}") {
+                    msgDiv.className = 'p-2 rounded bg-blue-100';
+                } else {
+                    msgDiv.className = 'p-2 rounded bg-gray-200';
+                }
+                {% else %}
+                msgDiv.className = 'p-2 rounded bg-gray-200';
+                {% endif %}
+                msgDiv.innerHTML = `<span class="font-semibold">${msg.user}</span>: <span>${msg.text}</span> <span class="text-xs text-gray-500 float-right">${msg.time}</span>`;
+                chatHistory.appendChild(msgDiv);
+            });
+            scrollChatToBottom();
+        });
+}
+
+// Scroll chat history to the bottom
+function scrollChatToBottom() {
+    const chatHistory = document.getElementById('chat-history');
+    if (chatHistory) {
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+}
+
+{% if current_user is defined and current_user.is_authenticated %}
+// Send message via AJAX, do not reload page
 function sendMessage(event) {
     event.preventDefault();
     const form = document.getElementById('chat-form');
@@ -61,25 +97,18 @@ function sendMessage(event) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            const chatHistory = document.getElementById('chat-history');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'p-2 rounded bg-blue-100';
-            msgDiv.innerHTML = `<span class="font-semibold">${data.message.user}</span>: <span>${data.message.text}</span> <span class="text-xs text-gray-500 float-right">${data.message.time}</span>`;
-            chatHistory.appendChild(msgDiv);
             form.reset();
-            chatHistory.scrollTop = chatHistory.scrollHeight;
+            fetchMessages(); // Refresh chat after sending
         }
     });
     return false;
 }
 {% endif %}
 
-// Scroll chat history to bottom on page load
+// On page load, scroll to bottom and start polling for new messages
 window.addEventListener('DOMContentLoaded', function() {
-    const chatHistory = document.getElementById('chat-history');
-    if (chatHistory) {
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-    }
+    fetchMessages();
+    setInterval(fetchMessages, 3000); // Poll every 3 seconds
 });
 </script>
 {% endblock %}
