@@ -1,12 +1,20 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 import pymysql
 import os
 from dotenv import load_dotenv
+import datetime
 
 load_dotenv()
 
 main_bp = Blueprint('main', __name__)
+
+messages = []
+
+def clean_expired_messages():
+    now = datetime.datetime.now()
+    # Only keep messages within the last 24 hours
+    messages[:] = [msg for msg in messages if (now - msg["dt"]).total_seconds() < 86400]
 
 @main_bp.route('/')
 def home():
@@ -18,12 +26,39 @@ def games():
 
 @main_bp.route('/about')
 def about():
-    return render_template('about.html')
+    clean_expired_messages()
+    return render_template('about.html', messages=messages)
+
+@main_bp.route('/chat', methods=['GET', 'POST'])
+@login_required
+def chat():
+    if request.method == 'POST':
+        message = request.form.get('message')
+        if message:
+            clean_expired_messages()
+            msg_obj = {
+                "user": current_user.get_id(),
+                "text": message,
+                "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "dt": datetime.datetime.now()
+            }
+            messages.append(msg_obj)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                
+                return jsonify(success=True, message={
+                    "user": msg_obj["user"],
+                    "text": msg_obj["text"],
+                    "time": msg_obj["time"]
+                })
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify(success=False)
+        return redirect(url_for('main.chat'))
+    clean_expired_messages()
+    return render_template('chat.html', messages=messages)
 
 @main_bp.route('/gomoku')
 # @login_required
 def gomoku():
-    # 查询当前用户的 AI 列表
     conn = pymysql.connect(
         host=os.getenv('DB_HOST'),
         user=os.getenv('DB_USER'),
@@ -36,7 +71,6 @@ def gomoku():
     bots = cursor.fetchall()
     conn.close()
 
-    # 将 AI 列表传递到模板
     return render_template('gomoku.html', bots=bots)
 
 @main_bp.route('/tank')

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Chat Room{% endblock %}
+
+{% block sidebar_left %}
+{% endblock %}
+{% block sidebar_right %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-screen-lg mx-auto mt-8 space-y-8">
+    <!-- <section class="bg-gradient-to-r from-blue-600 to-blue-400 text-white p-8 rounded-lg shadow-lg">
+        <h1 class="text-4xl font-bold mb-4">Chat Room</h1>
+        <p class="text-lg">Welcome to the Legend Zone chat room. Logged-in users can send messages below.</p>
+    </section> -->
+
+    <section class="bg-gray-100 p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-semibold mb-4">Chat History</h2>
+        <div id="chat-history" class="space-y-2 max-h-96 overflow-y-auto">
+            {% for msg in messages %}
+            <div class="p-2 rounded {% if msg.user == current_user.get_id() %}bg-blue-100{% else %}bg-gray-200{% endif %}">
+                <span class="font-semibold">{{ msg.user }}</span>:
+                <span>{{ msg.text }}</span>
+                <span class="text-xs text-gray-500 float-right">{{ msg.time }}</span>
+            </div>
+            {% else %}
+            <p class="text-gray-500">No messages yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% if current_user.is_authenticated %}
+    <section class="bg-white p-6 rounded-lg shadow-md sticky bottom-0">
+        <form id="chat-form" method="post" action="{{ url_for('main.chat') }}" onsubmit="return sendMessage(event);">
+            <div class="mb-4">
+                <textarea name="message" id="message" rows="3" class="w-full border rounded p-2 resize-none" placeholder="Type your message..." required></textarea>
+            </div>
+            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Send</button>
+        </form>
+    </section>
+    {% else %}
+    <section class="bg-white p-6 rounded-lg shadow-md">
+        <p class="text-gray-700">You must be logged in to send messages.</p>
+    </section>
+    {% endif %}
+</div>
+<script>
+function sendMessage(event) {
+    event.preventDefault();
+    const form = document.getElementById('chat-form');
+    const formData = new FormData(form);
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const chatHistory = document.getElementById('chat-history');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'p-2 rounded bg-blue-100';
+            msgDiv.innerHTML = `<span class="font-semibold">${data.message.user}</span>: <span>${data.message.text}</span> <span class="text-xs text-gray-500 float-right">${data.message.time}</span>`;
+            chatHistory.appendChild(msgDiv);
+            form.reset();
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+    });
+    return false;
+}
+</script>
+{% endblock %}
+
+
+
