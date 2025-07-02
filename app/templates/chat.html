@@ -45,6 +45,7 @@
     {% endif %}
 </div>
 <script>
+{% if current_user.is_authenticated %}
 function sendMessage(event) {
     event.preventDefault();
     const form = document.getElementById('chat-form');
@@ -70,6 +71,7 @@ function sendMessage(event) {
     });
     return false;
 }
+{% endif %}
 
 // Scroll chat history to bottom on page load
 window.addEventListener('DOMContentLoaded', function() {

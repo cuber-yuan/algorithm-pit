@@ -30,9 +30,11 @@ def about():
     return render_template('about.html', messages=messages)
 
 @main_bp.route('/chat', methods=['GET', 'POST'])
-@login_required
 def chat():
     if request.method == 'POST':
+        if not current_user.is_authenticated:
+            # Prevent posting if not logged in
+            return jsonify(success=False, error="Login required"), 401 if request.headers.get('X-Requested-With') == 'XMLHttpRequest' else redirect(url_for('main.chat'))
         message = request.form.get('message')
         if message:
             clean_expired_messages()
@@ -44,7 +46,6 @@ def chat():
             }
             messages.append(msg_obj)
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                
                 return jsonify(success=True, message={
                     "user": msg_obj["user"],
                     "text": msg_obj["text"],
