@@ -16,53 +16,53 @@
                 <tr>
                     <th class="px-4 py-2 border border-gray-300">#</th>
                     <th class="px-4 py-2 border border-gray-300">Game Name</th>
-                    <th class="px-4 py-2 border border-gray-300">Description</th>
+                    <th class="px-4 py-2 border border-gray-300 hidden md:table-cell">Description</th>
                     <th class="px-4 py-2 border border-gray-300">Play</th>
-                    <th class="px-4 py-2 border border-gray-300">Create Bot</th>
+                    <th class="px-4 py-2 border border-gray-300 hidden md:table-cell">Create Bot</th>
                 </tr>
             </thead>
             <tbody class="bg-white">
                 <tr class="hover:bg-gray-100">
                     <td class="px-4 py-2 border border-gray-300 text-center">1</td>
                     <td class="px-4 py-2 border border-gray-300">Gomoku</td>
-                    <td class="px-4 py-2 border border-gray-300">A classic strategy board game.</td>
+                    <td class="px-4 py-2 border border-gray-300 hidden md:table-cell">A classic strategy board game.</td>
                     <td class="px-4 py-2 border border-gray-300 text-center">
                         <a href="{{ url_for('main.gomoku') }}" class="text-blue-600 hover:underline">Play</a>
                     </td>
-                    <td class="px-4 py-2 border border-gray-300 text-center">
+                    <td class="px-4 py-2 border border-gray-300 text-center hidden md:table-cell">
                         <a href="#" class="text-green-600 hover:underline" onclick="openUploadModal('Gomoku')">Create Bot</a>
                     </td>
                 </tr>
                 <tr class="hover:bg-gray-100">
                     <td class="px-4 py-2 border border-gray-300 text-center">2</td>
                     <td class="px-4 py-2 border border-gray-300">Tank Battle</td>
-                    <td class="px-4 py-2 border border-gray-300">An action-packed tank battle game. (COMING SOON)</td>
+                    <td class="px-4 py-2 border border-gray-300 hidden md:table-cell">An action-packed tank battle game. (COMING SOON)</td>
                     <td class="px-4 py-2 border border-gray-300 text-center">
                         <a href="{{ url_for('main.tank') }}" class="text-blue-600 hover:underline">Play</a>
                     </td>
-                    <td class="px-4 py-2 border border-gray-300 text-center">
+                    <td class="px-4 py-2 border border-gray-300 text-center hidden md:table-cell">
                         <a href="#" class="text-green-600 hover:underline" onclick="openUploadModal('Tank Battle')">Create Bot</a>
                     </td>
                 </tr>
                 <tr class="hover:bg-gray-100">
                     <td class="px-4 py-2 border border-gray-300 text-center">3</td>
                     <td class="px-4 py-2 border border-gray-300">Cat King</td>
-                    <td class="px-4 py-2 border border-gray-300">Take on the role of a Feral Druid in WoW WotLK, sharpen your rotation, and push your DPS to the limit. (COMING SOON)</td>
+                    <td class="px-4 py-2 border border-gray-300 hidden md:table-cell">Take on the role of a Feral Druid in WoW WotLK, sharpen your rotation, and push your DPS to the limit. (COMING SOON)</td>
                     <td class="px-4 py-2 border border-gray-300 text-center">
                         <a href="{{ url_for('main.catking') }}" class="text-blue-600 hover:underline">Play</a>
                     </td>
-                    <td class="px-4 py-2 border border-gray-300 text-center">
+                    <td class="px-4 py-2 border border-gray-300 text-center hidden md:table-cell">
                         <a href="#" class="text-green-600 hover:underline" onclick="openUploadModal('Cat King')">Create Bot</a>
                     </td>
                 </tr>
                 <tr class="hover:bg-gray-100">
                     <td class="px-4 py-2 border border-gray-300 text-center">4</td>
                     <td class="px-4 py-2 border border-gray-300">Injoker</td>
-                    <td class="px-4 py-2 border border-gray-300">Master the art of playing Invoker in Dota 2! Practice quick spell combinations, unleash devastating abilities. Hone your skills to become the true Invoker, not an "Injoker".</td>
+                    <td class="px-4 py-2 border border-gray-300 hidden md:table-cell">Master the art of playing Invoker in Dota 2! Practice quick spell combinations, unleash devastating abilities. Hone your skills to become the true Invoker, not an "Injoker".</td>
                     <td class="px-4 py-2 border border-gray-300 text-center">
                         <a href="{{ url_for('main.injoker') }}" class="text-blue-600 hover:underline">Play</a>
                     </td>
-                    <td class="px-4 py-2 border border-gray-300 text-center">
+                    <td class="px-4 py-2 border border-gray-300 text-center hidden md:table-cell">
                         <a href="#" class="text-green-600 hover:underline">Create Bot</a>
                     </td>
                 </tr>
