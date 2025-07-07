@@ -99,8 +99,14 @@
   });
 
   function newGame() {
-    socket.emit('new_game', { user_id: userId });
-  }
+  const blackBot = document.getElementById('aiSelectBlack').value;
+  const whiteBot = document.getElementById('aiSelectWhite').value;
+  socket.emit('new_game', {
+    user_id: userId,
+    black_bot: blackBot,
+    white_bot: whiteBot
+  });
+}
 
   function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -127,10 +133,10 @@
     }
 
     // Draw existing stones
-    for (let i = 0; i < SIZE; i++) {
-      for (let j = 0; j < SIZE; j++) {
-        if (board[i][j] !== 0) {
-          drawStone(i, j, board[i][j] === 1);
+    for (let y = 0; y < SIZE; y++) {  
+      for (let x = 0; x < SIZE; x++) {  
+        if (board[y][x] !== 0) {  
+          drawStone(x, y, board[y][x] === 1);  
         }
       }
     }

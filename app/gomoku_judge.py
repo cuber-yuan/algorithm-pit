@@ -4,9 +4,37 @@ BOARD_SIZE = 15
 
 class GomokuJudge:
     def __init__(self):
+        # Coordinate system explanation:
+        # x represents column (horizontal): 0 1 2 3 4 ... 14 (left to right)
+        # y represents row (vertical):      0 1 2 3 4 ... 14 (top to bottom)
+        # 
+        # Board layout:
+        #     x  0 1 2 3 4 5 6 7 8 9 ...14
+        #   y ┌─────────────────────────────
+        #   0 │  . . . . . . . . . . . . . . .
+        #   1 │  . . . . . . . . . . . . . . .
+        #   2 │  . . . . . . . . . . . . . . .
+        #   3 │  . . . ★ . . . . . . . ★ . . .
+        #   4 │  . . . . . . . . . . . . . . .
+        #   5 │  . . . . . . . . . . . . . . .
+        #   6 │  . . . . . . . . . . . . . . .
+        #   7 │  . . . . . . . ★ . . . . . . .
+        #   8 │  . . . . . . . . . . . . . . .
+        #   9 │  . . . . . . . . . . . . . . .
+        #  10 │  . . . . . . . . . . . . . . .
+        #  11 │  . . . ★ . . . . . . . ★ . . .
+        #  12 │  . . . . . . . . . . . . . . .
+        #  13 │  . . . . . . . . . . . . . . .
+        #  14 │  . . . . . . . . . . . . . . .
+        #
+        # Access: board[y][x] = board[row][column]
+        # Example: board[3][7] is the center star point
+        
         self.board = [[0 for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
         self.current_player = 1  # 1: 黑, 2: 白
         self.move_history = []
+        self.black_bot_code = ''
+        self.white_bot_code = ''
 
     def is_valid_move(self, x, y):
         return 0 <= x < BOARD_SIZE and 0 <= y < BOARD_SIZE and self.board[y][x] == 0
@@ -15,7 +43,7 @@ class GomokuJudge:
         if not self.is_valid_move(x, y):
             return False
         self.board[y][x] = self.current_player
-        self.move_history.append((self.current_player, x, y))
+        self.move_history.append({'x':x, 'y':y})
         self.current_player = 3 - self.current_player  # 1<->2
         return True
 
@@ -44,12 +72,12 @@ class GomokuJudge:
             "move_history": self.move_history
         })
 
-    def send_action_to_ai(self, player, last_move):
+    def send_action_to_ai(self):
         # last_move: (player, x, y)
         data = {
-            "board": self.board,
-            "your_side": player,
-            "last_move": last_move
+            "move_history": self.move_history,
+            # "your_side": player,
+            # "last_move": last_move
         }
         print(json.dumps(data))
         return json.dumps(data)
@@ -60,6 +88,13 @@ class GomokuJudge:
         move = json.loads(raw)
         x, y = move["x"], move["y"]
         return x, y
+
+    def new_game(self):
+        """Initialize a new game"""
+        self.board = [[0 for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
+        self.current_player = 1  # Reset to black player
+        self.move_history = []
+        print("in gomoku_judge new_game")
 
 if __name__ == "__main__":
     judge = GomokuJudge()
