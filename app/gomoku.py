@@ -22,6 +22,8 @@ def register_gomoku_events(socketio):
     def handle_connect():
         user_id = str(uuid4())
         sessions[user_id] = GomokuJudge()
+        # 初始化 executor
+        # sessions[user_id].executor = CodeExecutor()
         join_room(request.sid)
         emit('init', {
             'user_id': user_id,
@@ -114,7 +116,7 @@ def register_gomoku_events(socketio):
         if not game:
             emit('error', {'message': 'Invalid user_id'})
             return
-        
+
         black_bot_id = data.get('black_bot')
         white_bot_id = data.get('white_bot')
         

@@ -93,15 +93,17 @@
 
   socket.on('update', (data) => {
     board = data.board;
-    // 记录最近一次落子的坐标
     if (data.move) {
       lastMove = { x: data.move.x, y: data.move.y };
     } else if (data.ai_move) {
       lastMove = { x: data.ai_move.x, y: data.ai_move.y };
+    } else {
+      lastMove = null; // 新局或特殊情况
     }
     drawBoard();
     if (data.winner) {
       alert((data.winner === 1 ? 'you' : 'AI') + ' win!');
+      gameOver = true; // 禁止继续下棋
     }
   });
 
@@ -113,7 +115,10 @@
       black_bot: blackBot,
       white_bot: whiteBot
     });
-    gameOver = false; // 允许下棋
+    gameOver = false;      // 允许下棋
+    lastMove = null;       // 清除高亮
+    board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0)); // 清空棋盘
+    drawBoard();
   }
 
   function drawBoard() {
