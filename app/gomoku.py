@@ -93,10 +93,18 @@ def register_gomoku_events(socketio):
         print("===DEBUG===", output)
         print(f'AI move: {ai_x}, {ai_y}')
         game.apply_move(ai_x, ai_y)
-        emit('update', {
+
+        # 新增：判断AI落子后的胜负
+        ai_winner = game.check_win(ai_x, ai_y)
+        ai_response = {
             'board': game.board,
             'ai_move': {'x': ai_x, 'y': ai_y, 'player': 2}
-        }, room=sid)
+        }
+        if ai_winner != 0:
+            game.winner = ai_winner
+            ai_response['winner'] = ai_winner
+
+        emit('update', ai_response, room=sid)
 
 
     @socketio.on('new_game', namespace='/gomoku')

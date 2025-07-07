@@ -76,9 +76,10 @@
   const SIZE = 15;
   const GRID = canvas.width / SIZE;
   let board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
-  let gameOver = false;
+  let gameOver = true; // 页面加载时禁止下棋
 
   let userId = null;
+  let lastMove = null;
   const socket = io('/gomoku');
 
   socket.on('connect', () => {
@@ -92,6 +93,12 @@
 
   socket.on('update', (data) => {
     board = data.board;
+    // 记录最近一次落子的坐标
+    if (data.move) {
+      lastMove = { x: data.move.x, y: data.move.y };
+    } else if (data.ai_move) {
+      lastMove = { x: data.ai_move.x, y: data.ai_move.y };
+    }
     drawBoard();
     if (data.winner) {
       alert((data.winner === 1 ? 'you' : 'AI') + ' win!');
@@ -99,14 +106,15 @@
   });
 
   function newGame() {
-  const blackBot = document.getElementById('aiSelectBlack').value;
-  const whiteBot = document.getElementById('aiSelectWhite').value;
-  socket.emit('new_game', {
-    user_id: userId,
-    black_bot: blackBot,
-    white_bot: whiteBot
-  });
-}
+    const blackBot = document.getElementById('aiSelectBlack').value;
+    const whiteBot = document.getElementById('aiSelectWhite').value;
+    socket.emit('new_game', {
+      user_id: userId,
+      black_bot: blackBot,
+      white_bot: whiteBot
+    });
+    gameOver = false; // 允许下棋
+  }
 
   function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -140,6 +148,21 @@
         }
       }
     }
+
+    // 高亮最近落子
+    if (lastMove) {
+      highlightMove(lastMove.x, lastMove.y);
+    }
+  }
+
+  // 高亮最近落子：棋子中心红点
+  function highlightMove(x, y) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x * GRID + GRID / 2, y * GRID + GRID / 2, GRID / 10, 0, 2 * Math.PI);
+    ctx.fillStyle = "#ff3333";
+    ctx.fill();
+    ctx.restore();
   }
 
   // Draw star point
