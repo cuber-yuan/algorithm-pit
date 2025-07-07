@@ -11,195 +11,197 @@ PLAYER_AI = 2
 
 # Scores for evaluation
 SCORE_WIN = 100000000
-SCORE_LOSS = -100000000
-SCORE_LIVE_FOUR = 50000
-SCORE_BLOCK_LIVE_FOUR = 100000
+SCORE_LOSS = -SCORE_WIN
+# A win found at a shallower depth is better
+WIN_ADJUSTMENT = 1000 
+
+# Scores for AI player's patterns
+SCORE_LIVE_FOUR = 100000
+SCORE_DEAD_FOUR = 15000
 SCORE_LIVE_THREE = 5000
-SCORE_BLOCK_LIVE_THREE = 10000
+SCORE_DEAD_THREE = 1000
 SCORE_LIVE_TWO = 500
-SCORE_BLOCK_LIVE_TWO = 1000
-SCORE_DEAD_FOUR = 1000
-SCORE_BLOCK_DEAD_FOUR = 2000
+SCORE_DEAD_TWO = 100
 
-class GomokuGame:
-    def __init__(self, board_size=15, search_depth=3):
+# Scores for blocking opponent's patterns (Human)
+SCORE_BLOCK_LIVE_FOUR = 80000
+SCORE_BLOCK_DEAD_FOUR = 20000
+SCORE_BLOCK_LIVE_THREE = 40000
+SCORE_BLOCK_DEAD_THREE = 8000
+SCORE_BLOCK_LIVE_TWO = 800
+
+class GomokuAI:
+    def __init__(self, board_size=15, time_limit=4.5, move_history=None):
         self.board_size = board_size
-        self.search_depth = search_depth
-        self.current_player = PLAYER_HUMAN
-        self.winner = EMPTY
+        self.time_limit = time_limit
         self.board = [[EMPTY] * self.board_size for _ in range(self.board_size)]
+        self.total_score = 0
+        self.start_time = 0
+        self.timed_out = False
 
-        # Zobrist Hashing and Transposition Table
-        self.zobrist_table = [[[random.randint(1, 2**64 - 1) for _ in range(3)]
-                               for _ in range(self.board_size)]
-                              for _ in range(self.board_size)]
-        self.current_hash = 0
-        self.transposition_table = {}
-        self.killer_moves = [[(None, None), (None, None)] for _ in range(search_depth + 5)]
-        self._initialize_hash()
+        self.patterns = self._initialize_patterns()
 
-    def _initialize_hash(self):
-        self.current_hash = 0
-        for r in range(self.board_size):
-            for c in range(self.board_size):
-                piece = self.board[r][c]
-                if piece != EMPTY:
-                    self.current_hash ^= self.zobrist_table[r][c][piece]
+        if move_history:
+            self._restore_from_history(move_history)
 
-    def _update_hash(self, r, c, old_piece, new_piece):
-        if old_piece != EMPTY:
-            self.current_hash ^= self.zobrist_table[r][c][old_piece]
-        if new_piece != EMPTY:
-            self.current_hash ^= self.zobrist_table[r][c][new_piece]
+    def _initialize_patterns(self):
+        """Initializes a dictionary of threat patterns and their scores."""
+        p = {
+            # AI Patterns (Player 2)
+            "22222": SCORE_WIN,
+            "022220": SCORE_LIVE_FOUR,
+            "122220": SCORE_DEAD_FOUR, "022221": SCORE_DEAD_FOUR,
+            "22202": SCORE_DEAD_FOUR, "20222": SCORE_DEAD_FOUR, "22022": SCORE_DEAD_FOUR,
+            "02220": SCORE_LIVE_THREE,
+            "122200": SCORE_DEAD_THREE, "002221": SCORE_DEAD_THREE,
+            "122020": SCORE_DEAD_THREE, "020221": SCORE_DEAD_THREE,
+            "02200": SCORE_LIVE_TWO,
+            "122000": SCORE_DEAD_TWO, "000221": SCORE_DEAD_TWO,
+            
+            # Human Patterns (Player 1) - scores are negative for AI
+            "11111": SCORE_LOSS,
+            "011110": -SCORE_BLOCK_LIVE_FOUR,
+            "211110": -SCORE_BLOCK_DEAD_FOUR, "011112": -SCORE_BLOCK_DEAD_FOUR,
+            "11101": -SCORE_BLOCK_DEAD_FOUR, "10111": -SCORE_BLOCK_DEAD_FOUR, "11011": -SCORE_BLOCK_DEAD_FOUR,
+            "01110": -SCORE_BLOCK_LIVE_THREE,
+            "211100": -SCORE_BLOCK_DEAD_THREE, "001112": -SCORE_BLOCK_DEAD_THREE,
+            "211010": -SCORE_BLOCK_DEAD_THREE, "010112": -SCORE_BLOCK_DEAD_THREE,
+            "01100": -SCORE_BLOCK_LIVE_TWO,
+            "211000": -SCORE_BLOCK_LIVE_TWO / 2, "000112": -SCORE_BLOCK_LIVE_TWO / 2
+        }
+        return p
 
-    def is_valid(self, x, y):
-        return 0 <= x < self.board_size and 0 <= y < self.board_size and self.board[y][x] == EMPTY
+    def _restore_from_history(self, move_history):
+        """Efficiently restores board state and incrementally calculates the total score."""
+        for i, move in enumerate(move_history):
+            player = PLAYER_HUMAN if i % 2 == 0 else PLAYER_AI
+            # The incremental update is embedded in make_move, so this is efficient
+            self.make_move(move['x'], move['y'], player)
 
-    def place_piece(self, x, y, player):
-        """Place piece at (x, y) - x=column, y=row"""
-        if self.is_valid(x, y):
-            old_piece = self.board[y][x]
+    def make_move(self, x, y, player):
+        """Places a piece and incrementally updates the board score."""
+        if self.board[y][x] == EMPTY:
+            self._update_score(x, y, player)
             self.board[y][x] = player
-            self._update_hash(y, x, old_piece, player)
             return True
         return False
 
-    def check_win(self, x, y, player):
-        """Check if player wins by placing at (x, y)"""
-        if self.board[y][x] != player:
-            return False
-        directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
+    def undo_move(self, x, y):
+        """Removes a piece and incrementally reverts the board score."""
+        player = self.board[y][x]
+        if player != EMPTY:
+            self.board[y][x] = EMPTY
+            self._update_score(x, y, player) # Re-calculates score changes
+            return True
+        return False
+        
+    def _update_score(self, x, y, player):
+        """Calculates the change in score by analyzing lines through (x, y)."""
+        directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
         for dx, dy in directions:
-            count = 1
-            # Check positive direction
-            for i in range(1, 5):
-                nx, ny = x + i * dx, y + i * dy
+            old_line = self._get_line(x, y, dx, dy)
+            self.total_score -= self._evaluate_line(old_line)
+            
+            self.board[y][x] = player
+            new_line = self._get_line(x, y, dx, dy)
+            self.total_score += self._evaluate_line(new_line)
+            
+            self.board[y][x] = EMPTY
+
+    def _get_line(self, x, y, dx, dy):
+        """Gets a string representation of a line of 9 cells through (x,y)."""
+        line = ""
+        for i in range(-4, 5):
+            nx, ny = x + i * dx, y + i * dy
+            if 0 <= nx < self.board_size and 0 <= ny < self.board_size:
+                line += str(self.board[ny][nx])
+            else:
+                line += '3' # Border/wall
+        return line
+
+    def _evaluate_line(self, line):
+        score = 0
+        for pattern, value in self.patterns.items():
+            if pattern in line:
+                score += value
+        return score
+        
+    def check_win_at(self, x, y, player):
+        self.board[y][x] = player
+        for dx, dy in [(1,0), (0,1), (1,1), (1,-1)]:
+            count = 0
+            for i in range(-4, 5):
+                nx, ny = x + i*dx, y + i*dy
                 if 0 <= nx < self.board_size and 0 <= ny < self.board_size and self.board[ny][nx] == player:
                     count += 1
+                    if count >= 5:
+                        self.board[y][x] = EMPTY
+                        return True
                 else:
-                    break
-            # Check negative direction
-            for i in range(1, 5):
-                nx, ny = x - i * dx, y - i * dy
-                if 0 <= nx < self.board_size and 0 <= ny < self.board_size and self.board[ny][nx] == player:
-                    count += 1
-                else:
-                    break
-            if count >= 5:
-                return True
+                    count = 0
+        self.board[y][x] = EMPTY
         return False
 
     def get_candidate_moves(self):
-        """Get candidate moves around existing pieces"""
         if all(self.board[r][c] == EMPTY for r in range(self.board_size) for c in range(self.board_size)):
             return [(self.board_size // 2, self.board_size // 2)]
-
         candidates = set()
-        radius = 2  # Search radius around existing pieces
-
+        radius = 2
         for r in range(self.board_size):
             for c in range(self.board_size):
                 if self.board[r][c] != EMPTY:
                     for dr in range(-radius, radius + 1):
                         for dc in range(-radius, radius + 1):
-                            if dr == 0 and dc == 0:
-                                continue
                             nr, nc = r + dr, c + dc
-                            if 0 <= nc < self.board_size and 0 <= nr < self.board_size and self.board[nr][nc] == EMPTY:
-                                candidates.add((nc, nr))  # (x, y) format
+                            if 0 <= nr < self.board_size and 0 <= nc < self.board_size and self.board[nr][nc] == EMPTY:
+                                candidates.add((nc, nr))
+        return list(candidates)
 
-        return list(candidates) if candidates else []
+    def minimax(self, depth, alpha, beta, is_maximizing_player):
+        if time.time() - self.start_time > self.time_limit:
+            self.timed_out = True
+            return 0 # Bail out
 
-    def evaluate_board(self):
-        """Evaluate current board position"""
-        total_score = 0
-        
-        # Check all possible lines of 5
-        for r in range(self.board_size):
-            for c in range(self.board_size):
-                # Horizontal
-                if c <= self.board_size - 5:
-                    line = [self.board[r][c+i] for i in range(5)]
-                    total_score += self.evaluate_line(line)
-                # Vertical
-                if r <= self.board_size - 5:
-                    line = [self.board[r+i][c] for i in range(5)]
-                    total_score += self.evaluate_line(line)
-                # Diagonal \
-                if r <= self.board_size - 5 and c <= self.board_size - 5:
-                    line = [self.board[r+i][c+i] for i in range(5)]
-                    total_score += self.evaluate_line(line)
-                # Diagonal /
-                if r <= self.board_size - 5 and c >= 4:
-                    line = [self.board[r+i][c-i] for i in range(5)]
-                    total_score += self.evaluate_line(line)
-        
-        return total_score
-
-    def evaluate_line(self, line):
-        """Evaluate a line of 5 positions"""
-        ai_count = line.count(PLAYER_AI)
-        human_count = line.count(PLAYER_HUMAN)
-        empty_count = line.count(EMPTY)
-        
-        score = 0
-        
-        # If line contains both players, it's useless
-        if ai_count > 0 and human_count > 0:
-            return 0
-            
-        # AI patterns
-        if ai_count == 4 and empty_count == 1:
-            score += SCORE_LIVE_FOUR
-        elif ai_count == 3 and empty_count == 2:
-            score += SCORE_LIVE_THREE
-        elif ai_count == 2 and empty_count == 3:
-            score += SCORE_LIVE_TWO
-            
-        # Human patterns (threats to block)
-        if human_count == 4 and empty_count == 1:
-            score -= SCORE_BLOCK_LIVE_FOUR
-        elif human_count == 3 and empty_count == 2:
-            score -= SCORE_BLOCK_LIVE_THREE
-        elif human_count == 2 and empty_count == 3:
-            score -= SCORE_BLOCK_LIVE_TWO
-            
-        return score
-
-    def minimax(self, depth, alpha, beta, is_maximizing, last_move=None):
-        """Minimax with alpha-beta pruning"""
-        # Check for terminal states
-        if last_move:
-            x, y = last_move
-            player = self.board[y][x]
-            if self.check_win(x, y, player):
-                return SCORE_WIN if player == PLAYER_AI else SCORE_LOSS
-                
+        # Terminal state check
         if depth == 0:
-            return self.evaluate_board()
+            return self.total_score if is_maximizing_player else -self.total_score
 
-        candidates = self.get_candidate_moves()
-        if not candidates:
+        player = PLAYER_AI if is_maximizing_player else PLAYER_HUMAN
+        moves = self.get_candidate_moves()
+
+        if not moves:
             return 0
+        
+        # Move ordering could be improved here by checking promising moves first
 
-        if is_maximizing:  # AI turn
+        if is_maximizing_player:
             max_eval = -math.inf
-            for x, y in candidates:
-                self.board[y][x] = PLAYER_AI
-                eval_score = self.minimax(depth - 1, alpha, beta, False, (x, y))
-                self.board[y][x] = EMPTY
+            for x, y in moves:
+                if self.check_win_at(x,y,player):
+                    return SCORE_WIN - (20 - depth) # Prioritize faster wins
+                
+                self.make_move(x, y, player)
+                eval_score = self.minimax(depth - 1, alpha, beta, False)
+                self.undo_move(x, y)
+                
+                if self.timed_out: return 0
                 
                 max_eval = max(max_eval, eval_score)
                 alpha = max(alpha, eval_score)
                 if beta <= alpha:
                     break
             return max_eval
-        else:  # Human turn
+        else:
             min_eval = math.inf
-            for x, y in candidates:
-                self.board[y][x] = PLAYER_HUMAN
-                eval_score = self.minimax(depth - 1, alpha, beta, True, (x, y))
-                self.board[y][x] = EMPTY
+            for x, y in moves:
+                if self.check_win_at(x,y,player):
+                    return SCORE_LOSS + (20 - depth) # Postpone losses
+                
+                self.make_move(x, y, player)
+                eval_score = self.minimax(depth - 1, alpha, beta, True)
+                self.undo_move(x, y)
+
+                if self.timed_out: return 0
                 
                 min_eval = min(min_eval, eval_score)
                 beta = min(beta, eval_score)
@@ -208,78 +210,77 @@ class GomokuGame:
             return min_eval
 
     def find_best_move(self):
-        """Find the best move for AI"""
+        """
+        Finds the best move using Iterative Deepening and a time limit.
+        """
+        self.start_time = time.time()
+        self.timed_out = False
+        
         candidates = self.get_candidate_moves()
         if not candidates:
             return None
 
-        # Check for immediate win
+        # Check for immediate win or loss to respond instantly
         for x, y in candidates:
-            self.board[y][x] = PLAYER_AI
-            if self.check_win(x, y, PLAYER_AI):
-                self.board[y][x] = EMPTY
+            if self.check_win_at(x, y, PLAYER_AI):
                 return (x, y)
-            self.board[y][x] = EMPTY
-
-        # Check for immediate threat to block
         for x, y in candidates:
-            self.board[y][x] = PLAYER_HUMAN
-            if self.check_win(x, y, PLAYER_HUMAN):
-                self.board[y][x] = EMPTY
+            if self.check_win_at(x, y, PLAYER_HUMAN):
                 return (x, y)
-            self.board[y][x] = EMPTY
 
-        # Use minimax to find best move
-        best_move = None
-        best_score = -math.inf
-
-        for x, y in candidates:
-            self.board[y][x] = PLAYER_AI
-            score = self.minimax(self.search_depth - 1, -math.inf, math.inf, False, (x, y))
-            self.board[y][x] = EMPTY
-            
-            if score > best_score:
-                best_score = score
-                best_move = (x, y)
-
-        return best_move
-
-    def restore_from_history(self, move_history):
-        """Restore board state from move history"""
-        self.board = [[EMPTY] * self.board_size for _ in range(self.board_size)]
+        overall_best_move = candidates[0]
         
-        for i, move in enumerate(move_history):
-            x, y = move['x'], move['y']
-            player = PLAYER_HUMAN if i % 2 == 0 else PLAYER_AI  # Assume human plays first
-            self.place_piece(x, y, player)
+        # Iterative Deepening Loop
+        for depth in range(1, 20): # Max depth, will be stopped by time
+            best_move_this_iteration = None
+            best_score = -math.inf
+            
+            for x, y in candidates:
+                self.make_move(x, y, PLAYER_AI)
+                score = self.minimax(depth, -math.inf, math.inf, False)
+                self.undo_move(x, y)
+
+                if self.timed_out:
+                    break 
+
+                if score > best_score:
+                    best_score = score
+                    best_move_this_iteration = (x, y)
+            
+            if self.timed_out:
+                break # Exit the depth loop if the search for this depth timed out
+
+            if best_move_this_iteration:
+                overall_best_move = best_move_this_iteration
+                # Move ordering: best move from this depth goes first in the next
+                candidates.remove(overall_best_move)
+                candidates.insert(0, overall_best_move)
+            
+            # If a win is found, no need to search deeper
+            if best_score >= SCORE_WIN - (20 - depth + 1):
+                break
+
+        return overall_best_move
+
 
 def main():
-    """Main function to process one move"""
     try:
-        # Read JSON input
         input_data = json.loads(input().strip())
-        
-        # Create game instance
-        game = GomokuGame()
-        
-        # Restore game state from history
         move_history = input_data.get('move_history', [])
-        game.restore_from_history(move_history)
         
-        # Find best move for AI
+        # Initialize AI. The time limit ensures a timely response.
+        game = GomokuAI(move_history=move_history, time_limit=4.5)
+        
         best_move = game.find_best_move()
         
         if best_move:
-            x, y = best_move
-            # Output JSON result
-            result = {"x": x, "y": y}
+            result = {"x": best_move[0], "y": best_move[1]}
             print(json.dumps(result))
         else:
-            # No valid move found
-            print(json.dumps({"error": "No valid move"}))
+            print(json.dumps({"error": "No valid move found"}))
             
     except Exception as e:
-        print(json.dumps({"error": str(e)}))
+        print(json.dumps({"error": str(e), "type": type(e).__name__}))
 
 if __name__ == '__main__':
     main()

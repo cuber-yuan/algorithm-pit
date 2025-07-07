@@ -11,6 +11,7 @@ import contextlib
 import subprocess
 import tempfile
 import os
+from .code_executor import CodeExecutor
 
 gomoku_bp = Blueprint('gomoku', __name__)
 
@@ -27,6 +28,7 @@ def register_gomoku_events(socketio):
             'board': sessions[user_id].board
         }, room=request.sid)
         print(f'new gomoku user connected: {user_id}')
+        
 
     @socketio.on('player_move', namespace='/gomoku')
     def handle_player_move(data):
@@ -39,49 +41,41 @@ def register_gomoku_events(socketio):
             emit('error', {'message': 'Invalid user_id'})
             return
 
-        
+        # 新增：如果已經有勝者，不允許再落子
+        if hasattr(game, 'winner') and game.winner:
+            emit('error', {'message': 'Game over'})
+            return
 
-        game.apply_move(x, y)  
-        
+        if game.current_player != 1:
+            emit('error', {'message': 'Not your turn'})
+            return
+
+        game.apply_move(x, y)
+
+        # 判斷勝負
+        winner = game.check_win(x, y)
+        if winner != 0:
+            game.winner = winner  # 記錄勝者
+
         response = {
             'board': game.board,
             'move': {'x': x, 'y': y, 'player': 1}
         }
-        if game.check_win(x, y) != 0:
-            response['winner'] = game.check_win(x, y)
+        if winner != 0:
+            response['winner'] = winner
 
         emit('update', response)
-        
+
+        if winner != 0:
+            return  # 有勝者就不再讓AI落子
 
         
         input_str = game.send_action_to_ai()
         
         print("input_str IS :", input_str)
-
-        try:
-            # 调用 gomoku_ai.py，传递 input_str 给 stdin
-            # 写入临时文件
-            with tempfile.NamedTemporaryFile('w', delete=False, suffix='.py') as tmpfile:
-                tmpfile.write(game.white_bot_code)
-                tmpfile_path = tmpfile.name
-
-            # 用 subprocess 运行临时文件
-            result = subprocess.run(
-                ['python', tmpfile_path],
-                input=input_str.encode('utf-8'),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=10
-            )
-            # 删除临时文件
-            os.unlink(tmpfile_path)
-            output = result.stdout.decode('utf-8').strip()
-            print("===AI STDOUT===", output)
-            if result.stderr:
-                print("===AI STDERR===", result.stderr.decode('utf-8'))
-        except Exception as e:
-            print(f"Subprocess error: {e}")
-            output = ''
+        
+        output = game.executor.run(input_str)
+        
 
         if output:
             try:
@@ -117,6 +111,7 @@ def register_gomoku_events(socketio):
         white_bot_id = data.get('white_bot')
         
         
+        
         import pymysql
         import os
         from dotenv import load_dotenv
@@ -145,7 +140,8 @@ def register_gomoku_events(socketio):
             result = cursor.fetchone()
             if result:
                 game.white_bot_code = result[0]
-        
+                game.executor = CodeExecutor(
+                    code=sessions[user_id].white_bot_code)
         conn.close()
         
         # 将bot代码传递给游戏实例
