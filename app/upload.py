@@ -27,7 +27,7 @@ def get_user_id_by_username(username):
     conn.close()
     return result[0] if result else None
 
-def save_bot_to_db(user_id, bot_name, description, language, source_code=None, file_path=None):
+def save_bot_to_db(user_id, bot_name, description, language, source_code=None, file_path=None, game=None):
     """保存Bot信息到数据库"""
     conn = pymysql.connect(
         host=os.getenv('DB_HOST'),
@@ -37,13 +37,12 @@ def save_bot_to_db(user_id, bot_name, description, language, source_code=None, f
         charset='utf8mb4'
     )
     cursor = conn.cursor()
-    # print(user_id, bot_name, description, language, source_code, file_path) # Debugging line
     cursor.execute(
         """
-        INSERT INTO bots (user_id, bot_name, description, language, source_code, file_path)
-        VALUES (%s, %s, %s, %s, %s, %s)
+        INSERT INTO bots (user_id, bot_name, description, language, source_code, file_path, game)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
         """,
-        (user_id, bot_name, description, language, source_code, file_path)
+        (user_id, bot_name, description, language, source_code, file_path, game)
     )
     conn.commit()
     conn.close()
@@ -56,6 +55,7 @@ def upload_bot():
     language = request.form.get('language')
     source_code = request.form.get('sourceCode')
     bot_file = request.files.get('botFile')
+    game = 'gomoku'  # TODO - 这里可以根据实际情况修改
     # username = request.form.get('username')  # 客户端传递的用户名
 
     # 验证输入
@@ -86,7 +86,8 @@ def upload_bot():
         description=description,
         language=language,
         source_code=source_code if not bot_file else None,
-        file_path=file_path
+        file_path=file_path,
+        game=game,
     )
 
     return jsonify({"message": "Bot uploaded successfully!"})

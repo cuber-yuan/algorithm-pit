@@ -12,6 +12,7 @@ import subprocess
 import tempfile
 import os
 from .code_executor import CodeExecutor
+import uuid
 
 gomoku_bp = Blueprint('gomoku', __name__)
 
@@ -22,8 +23,7 @@ def register_gomoku_events(socketio):
     def handle_connect():
         user_id = str(uuid4())
         sessions[user_id] = GomokuJudge()
-        # 初始化 executor
-        # sessions[user_id].executor = CodeExecutor()
+        sessions[user_id].sid = request.sid  # 记录sid
         join_room(request.sid)
         emit('init', {
             'user_id': user_id,
@@ -36,20 +36,29 @@ def register_gomoku_events(socketio):
     def handle_player_move(data):
         user_id = data['user_id']
         x, y = data['x'], data['y']
+        client_game_id = data.get('game_id')
         game = sessions.get(user_id)
         sid = request.sid
+
+        if not game or getattr(game, 'game_id', None) != client_game_id:
+            # 忽略旧局的落子
+            return
 
         if not game:
             emit('error', {'message': 'Invalid user_id'})
             return
 
-        # 新增：如果已經有勝者，不允許再落子
         if hasattr(game, 'winner') and game.winner:
             emit('error', {'message': 'Game over'})
             return
 
         if game.current_player != 1:
             emit('error', {'message': 'Not your turn'})
+            return
+
+        
+        if game.board[y][x] != 0:
+            emit('error', {'message': 'Invalid move: position already occupied'})
             return
 
         game.apply_move(x, y)
@@ -69,16 +78,10 @@ def register_gomoku_events(socketio):
         emit('update', response)
 
         if winner != 0:
-            return  # 有勝者就不再讓AI落子
+            return 
 
-        
         input_str = game.send_action_to_ai()
-        
-        print("input_str IS :", input_str)
-        
         output = game.executor.run(input_str)
-        
-
         if output:
             try:
                 move_data = json.loads(output)
@@ -92,11 +95,9 @@ def register_gomoku_events(socketio):
             print("No output from bot!")
             ai_x, ai_y = 0, 0
 
-        print("===DEBUG===", output)
-        print(f'AI move: {ai_x}, {ai_y}')
         game.apply_move(ai_x, ai_y)
 
-        # 新增：判断AI落子后的胜负
+        
         ai_winner = game.check_win(ai_x, ai_y)
         ai_response = {
             'board': game.board,
@@ -157,15 +158,18 @@ def register_gomoku_events(socketio):
         # 将bot代码传递给游戏实例
         #game.new_game(black_bot_code=black_bot_code, white_bot_code=white_bot_code)
         game.new_game()
+        game.winner = 0
+        game.game_id = str(uuid.uuid4())  # 新增唯一game_id
         response = {
             'board': game.board,
+            'game_id': game.game_id
         }
         emit('update', response)
 
     @socketio.on('disconnect', namespace='/gomoku')
     def handle_disconnect():
         for user_id, game in list(sessions.items()):
-            if game.sid == request.sid:
+            if hasattr(game, 'sid') and game.sid == request.sid:
                 del sessions[user_id]
                 print(f'User {user_id} disconnected and session cleaned up')
                 break

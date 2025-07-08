@@ -79,7 +79,7 @@ class GomokuJudge:
             # "your_side": player,
             # "last_move": last_move
         }
-        print(json.dumps(data))
+        # print(json.dumps(data))
         return json.dumps(data)
 
     def receive_action_from_ai(self):
@@ -94,7 +94,7 @@ class GomokuJudge:
         self.board = [[0 for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
         self.current_player = 1  # Reset to black player
         self.move_history = []
-        print("in gomoku_judge new_game")
+        
 
 if __name__ == "__main__":
     judge = GomokuJudge()

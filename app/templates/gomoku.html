@@ -41,6 +41,10 @@
     margin-top: 20px;
     border: 2px solid #333;
   }
+  #board-mask span {
+    user-select: none;
+    cursor: default;
+  }
 </style>
 <div class="bg-gray-100 py-10">
   <div class="max-w-screen-xl mx-auto px-4">
@@ -54,172 +58,210 @@
 
     <!-- Game Canvas Section -->
     <div class="bg-white p-6 rounded-lg shadow-md text-center">
-      <p class="text-gray-700 mb-4">You play as <strong>black</strong>. Click on the board to place a stone.</p>
-      <canvas id="board" width="600" height="600" class="mx-auto"></canvas>
+      <div style="position:relative;width:600px;height:600px;margin:auto;">
+        <div id="phaser-container" style="width:600px;height:600px;"></div>
+        <div id="board-mask"
+             style="position:absolute;left:0;top:0;width:600px;height:600px;
+                    background:rgba(0,0,0,0.25);z-index:10;display:none;
+                    justify-content:center;align-items:center;color:white;font-size:2rem;">
+          <span>Waiting for new game...</span>
+        </div>
+      </div>
       <br>
       <button type="button" onclick="newGame()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New Game</button>
 
     </div>
 
-    <!-- Game Description Section -->
-    <section class="bg-white p-6 rounded-lg shadow-md mb-8">
-      <p class="text-gray-700 leading-relaxed">
-        Gomoku, also known as "Five in a Row," is a traditional board game that has been enjoyed for centuries. The rules are simple yet the strategy can be complex, making it a favorite for players of all ages. The goal is to place five of your stones in a row—horizontally, vertically, or diagonally—before your opponent does.
-      </p>
-    </section>
+    <br>
+      <div style="margin-top: 2rem;"></div>
+      <!-- Sample Bot Code Section -->
+      <section class="bg-white p-6 rounded-lg shadow-md mb-8">
+        <h2 class="text-xl font-bold mb-4">Sample Bot Code (Python)</h2>
+        <pre class="bg-gray-100 p-4 rounded-lg border border-gray-300" style="white-space: pre-wrap; word-break: break-word;">
+<code class="language-python">
+import json
+import random
+
+EMPTY = 0
+
+def main():
+    data = json.loads(input())
+    move_history = data.get('move_history', [])
+    board = [[EMPTY]*15 for _ in range(15)]
+    for i, m in enumerate(move_history):
+        board[m['y']][m['x']] = 1 if i%2==0 else 2
+    options = [(x, y) for y in range(15) for x in range(15) if board[y][x]==EMPTY]
+    if options:
+        x, y = random.choice(options)
+        print(json.dumps({'x': x, 'y': y}))
+    else:
+        print(json.dumps({'error': 'No valid move found or board is full.'}))
+
+if __name__ == '__main__':
+    main()
+</code>
+        </pre>
+      </section>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
 <script>
-  const canvas = document.getElementById("board");
-  const ctx = canvas.getContext("2d");
-  const SIZE = 15;
-  const GRID = canvas.width / SIZE;
-  let board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
-  let gameOver = true; // 页面加载时禁止下棋
+const SIZE = 15;
+const GRID = 40;
+let board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+let lastMove = null;
+let gameOver = true;
+let userId = null;
+let currentGameId = null;
 
-  let userId = null;
-  let lastMove = null;
-  const socket = io('/gomoku');
-
-  socket.on('connect', () => {
-
-  });
-
-  socket.on('init', (data) => {
-    userId = data.user_id;
-  });
-
-
-  socket.on('update', (data) => {
-    board = data.board;
-    if (data.move) {
-      lastMove = { x: data.move.x, y: data.move.y };
-    } else if (data.ai_move) {
-      lastMove = { x: data.ai_move.x, y: data.ai_move.y };
-    } else {
-      lastMove = null; // 新局或特殊情况
-    }
-    drawBoard();
-    if (data.winner) {
-      alert((data.winner === 1 ? 'you' : 'AI') + ' win!');
-      gameOver = true; // 禁止继续下棋
-    }
-  });
-
-  function newGame() {
-    const blackBot = document.getElementById('aiSelectBlack').value;
-    const whiteBot = document.getElementById('aiSelectWhite').value;
-    socket.emit('new_game', {
-      user_id: userId,
-      black_bot: blackBot,
-      white_bot: whiteBot
-    });
-    gameOver = false;      // 允许下棋
-    lastMove = null;       // 清除高亮
-    board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0)); // 清空棋盘
-    drawBoard();
+const config = {
+  type: Phaser.AUTO,
+  width: SIZE * GRID,
+  height: SIZE * GRID,
+  parent: 'phaser-container',
+  backgroundColor: '#f5deb3',
+  scene: {
+    create,
+    preload,
   }
+};
 
-  function drawBoard() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+let phaserGame = new Phaser.Game(config);
+let graphics;
 
-    // Draw grid lines
-    for (let i = 0; i < SIZE; i++) {
-      ctx.beginPath();
-      ctx.moveTo(GRID / 2, GRID / 2 + i * GRID);
-      ctx.lineTo(canvas.width - GRID / 2, GRID / 2 + i * GRID);
-      ctx.stroke();
+function preload() {}
 
-      ctx.beginPath();
-      ctx.moveTo(GRID / 2 + i * GRID, GRID / 2);
-      ctx.lineTo(GRID / 2 + i * GRID, canvas.height - GRID / 2);
-      ctx.stroke();
-    }
-
-    // Draw five star points
-    const starPoints = [
-      [3, 3], [3, 11], [7, 7], [11, 3], [11, 11]
-    ];
-    for (let [x, y] of starPoints) {
-      drawStarPoint(x, y);
-    }
-
-    // Draw existing stones
-    for (let y = 0; y < SIZE; y++) {  
-      for (let x = 0; x < SIZE; x++) {  
-        if (board[y][x] !== 0) {  
-          drawStone(x, y, board[y][x] === 1);  
-        }
-      }
-    }
-
-    // 高亮最近落子
-    if (lastMove) {
-      highlightMove(lastMove.x, lastMove.y);
-    }
-  }
-
-  // 高亮最近落子：棋子中心红点
-  function highlightMove(x, y) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(x * GRID + GRID / 2, y * GRID + GRID / 2, GRID / 10, 0, 2 * Math.PI);
-    ctx.fillStyle = "#ff3333";
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // Draw star point
-  function drawStarPoint(i, j) {
-    const x = GRID / 2 + i * GRID;
-    const y = GRID / 2 + j * GRID;
-    const r = 5;
-
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, 2 * Math.PI);
-    ctx.fillStyle = '#333';
-    ctx.fill();
-  }
-
-
-  function drawStone(x, y, isBlack) {
-    ctx.beginPath();
-    ctx.arc(x * GRID + GRID / 2, y * GRID + GRID / 2, GRID / 2.5, 0, 2 * Math.PI);
-    ctx.fillStyle = isBlack ? "black" : "white";
-    ctx.fill();
-    ctx.stroke();
-  }
-
-  function checkWin(x, y, player) {
-    function count(dx, dy) {
-      let count = 1;
-      for (let d = 1; d < 5; d++) {
-        let nx = x + dx * d, ny = y + dy * d;
-        if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE || board[nx][ny] !== player) break;
-        count++;
-      }
-      for (let d = 1; d < 5; d++) {
-        let nx = x - dx * d, ny = y - dy * d;
-        if (nx < 0 || ny < 0 || nx >= SIZE || ny >= SIZE || board[nx][ny] !== player) break;
-        count++;
-      }
-      return count >= 5;
-    }
-    return count(1, 0) || count(0, 1) || count(1, 1) || count(1, -1);
-  }
-
-  function testcallback(data) {
-    console.log(data)
-  }
-
-  canvas.addEventListener("click", (e) => {
-    if (gameOver) return;
-    let x = Math.floor(e.offsetX / GRID);
-    let y = Math.floor(e.offsetY / GRID);
-    socket.emit('player_move', { user_id: userId, x: x, y: y });
-  });
-
+function create() {
+  graphics = this.add.graphics();
   drawBoard();
+
+  this.input.on('pointerdown', pointer => {
+    if (gameOver) return;
+    const x = Math.floor(pointer.x / GRID);
+    const y = Math.floor(pointer.y / GRID);
+    if (board[y][x] !== 0) return;
+    sendPlayerMove(x, y);
+  });
+}
+
+function drawBoard() {
+  graphics.clear();
+
+  // Draw grid
+  graphics.lineStyle(1, 0x333333, 1);
+  for (let i = 0; i < SIZE; i++) {
+    graphics.lineBetween(GRID / 2, GRID / 2 + i * GRID, GRID * (SIZE - 0.5), GRID / 2 + i * GRID);
+    graphics.lineBetween(GRID / 2 + i * GRID, GRID / 2, GRID / 2 + i * GRID, GRID * (SIZE - 0.5));
+  }
+
+  // Draw star points
+  const starPoints = [
+    [3, 3], [3, 11], [7, 7], [11, 3], [11, 11]
+  ];
+  for (let [x, y] of starPoints) {
+    graphics.fillStyle(0x333333, 1);
+    graphics.fillCircle(GRID / 2 + x * GRID, GRID / 2 + y * GRID, 5);
+  }
+
+  // Draw stones
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      if (board[y][x] !== 0) {
+        drawStone(x, y, board[y][x] === 1);
+      }
+    }
+  }
+
+  // Highlight last move
+  if (lastMove) {
+    highlightMove(lastMove.x, lastMove.y);
+  }
+}
+
+function drawStone(x, y, isBlack) {
+  graphics.fillStyle(isBlack ? 0x000000 : 0xffffff, 1);
+  graphics.fillCircle(GRID / 2 + x * GRID, GRID / 2 + y * GRID, GRID / 2.5);
+  graphics.lineStyle(1, 0x333333, 1);
+  graphics.strokeCircle(GRID / 2 + x * GRID, GRID / 2 + y * GRID, GRID / 2.5);
+}
+
+function highlightMove(x, y) {
+  graphics.fillStyle(0xff3333, 1);
+  graphics.fillCircle(GRID / 2 + x * GRID, GRID / 2 + y * GRID, GRID / 10);
+}
+
+// Socket.io 相关逻辑
+const socket = io('/gomoku');
+socket.on('connect', () => {});
+
+socket.on('init', (data) => {
+  userId = data.user_id;
+});
+
+socket.on('update', (data) => {
+  if (data.game_id) {
+    currentGameId = data.game_id;
+  }
+  board = data.board;
+  if (data.move) {
+    lastMove = { x: data.move.x, y: data.move.y };
+  } else if (data.ai_move) {
+    lastMove = { x: data.ai_move.x, y: data.ai_move.y };
+  } else {
+    lastMove = null;
+  }
+  drawBoard();
+
+  if (data.winner) {
+    let msg = '';
+    if (data.winner === 1) {
+      msg = 'Black wins!';
+    } else if (data.winner === 2) {
+      msg = 'White wins!';
+    } else {
+      msg = 'Draw!';
+    }
+    showBoardMask(msg); // 显示遮罩和胜负信息
+    gameOver = true;
+  } else {
+    hideBoardMask();
+  }
+});
+
+function showBoardMask(msg = "Waiting for new game...") {
+  const mask = document.getElementById('board-mask');
+  mask.style.display = 'flex';
+  mask.querySelector('span').textContent = msg;
+}
+function hideBoardMask() {
+  document.getElementById('board-mask').style.display = 'none';
+}
+
+// 页面初始和newGame时显示遮罩
+showBoardMask();
+
+// newGame按钮点击时
+function newGame() {
+  const blackBot = document.getElementById('aiSelectBlack').value;
+  const whiteBot = document.getElementById('aiSelectWhite').value;
+  socket.emit('new_game', {
+    user_id: userId,
+    black_bot: blackBot,
+    white_bot: whiteBot
+  });
+  showBoardMask();
+  gameOver = false;
+  lastMove = null;
+  board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+  drawBoard();
+}
+
+function sendPlayerMove(x, y) {
+  socket.emit('player_move', { user_id: userId, x, y, game_id: currentGameId });
+}
 </script>
+<link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
 {% endblock %}
