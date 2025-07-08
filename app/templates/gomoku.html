@@ -58,10 +58,10 @@
 
     <!-- Game Canvas Section -->
     <div class="bg-white p-6 rounded-lg shadow-md text-center">
-      <div style="position:relative;width:600px;height:600px;margin:auto;">
-        <div id="phaser-container" style="width:600px;height:600px;"></div>
+      <div style="position:relative;width:100%;max-width:600px;height:auto;margin:auto;">
+        <div id="phaser-container" style="width:100%;height:100%;"></div>
         <div id="board-mask"
-             style="position:absolute;left:0;top:0;width:600px;height:600px;
+             style="position:absolute;left:0;top:0;width:100%;height:100%;
                     background:rgba(0,0,0,0.25);z-index:10;display:none;
                     justify-content:center;align-items:center;color:white;font-size:2rem;">
           <span>Waiting for new game...</span>
@@ -86,18 +86,20 @@ EMPTY = 0
 
 def main():
     data = json.loads(input())
-    move_history = data.get('move_history', [])
-    board = [[EMPTY]*15 for _ in range(15)]
+    move_history = data.get("move_history", [])
+    board = [[EMPTY] * 15 for _ in range(15)]
     for i, m in enumerate(move_history):
-        board[m['y']][m['x']] = 1 if i%2==0 else 2
-    options = [(x, y) for y in range(15) for x in range(15) if board[y][x]==EMPTY]
+        board[m["y"]][m["x"]] = 1 if i % 2 == 0 else 2
+    options = [
+        (x, y) for y in range(15) for x in range(15) if board[y][x] == EMPTY
+    ]
     if options:
         x, y = random.choice(options)
-        print(json.dumps({'x': x, 'y': y}))
+        print(json.dumps({"x": x, "y": y}))
     else:
-        print(json.dumps({'error': 'No valid move found or board is full.'}))
+        print(json.dumps({"error": "No valid move found or board is full."}))
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 </code>
         </pre>
@@ -107,8 +109,15 @@ if __name__ == '__main__':
 
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
 <script>
-const SIZE = 15;
-const GRID = 40;
+function getBoardSize() {
+  // 取屏幕宽度和最大600px的较小值
+  return Math.min(window.innerWidth, 600);
+}
+
+let SIZE = 15;
+let BOARD_SIZE = getBoardSize();
+let GRID = BOARD_SIZE / SIZE;
+
 let board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
 let lastMove = null;
 let gameOver = true;
@@ -117,8 +126,8 @@ let currentGameId = null;
 
 const config = {
   type: Phaser.AUTO,
-  width: SIZE * GRID,
-  height: SIZE * GRID,
+  width: BOARD_SIZE,
+  height: BOARD_SIZE,
   parent: 'phaser-container',
   backgroundColor: '#f5deb3',
   scene: {
@@ -260,6 +269,14 @@ function newGame() {
 function sendPlayerMove(x, y) {
   socket.emit('player_move', { user_id: userId, x, y, game_id: currentGameId });
 }
+
+// 当窗口大小变化时自适应
+window.addEventListener('resize', () => {
+  BOARD_SIZE = getBoardSize();
+  GRID = BOARD_SIZE / SIZE;
+  phaserGame.scale.resize(BOARD_SIZE, BOARD_SIZE);
+  drawBoard();
+});
 </script>
 <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
