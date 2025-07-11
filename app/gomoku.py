@@ -23,7 +23,7 @@ def register_gomoku_events(socketio):
     def handle_connect():
         user_id = str(uuid4())
         sessions[user_id] = GomokuJudge()
-        sessions[user_id].sid = request.sid  # 记录sid
+        sessions[user_id].sid = request.sid
         join_room(request.sid)
         emit('init', {
             'user_id': user_id,
@@ -63,10 +63,10 @@ def register_gomoku_events(socketio):
 
         game.apply_move(x, y)
 
-        # 判斷勝負
+        
         winner = game.check_win(x, y)
         if winner != 0:
-            game.winner = winner  # 記錄勝者
+            game.winner = winner 
 
         response = {
             'board': game.board,

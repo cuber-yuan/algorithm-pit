@@ -4,31 +4,38 @@
 
 {% block sidebar_left %}
 <aside class="sider-left">
-<div style="padding: 2rem;">
-  <h2 style="font-size: 1.25rem; font-weight: bold;">Black</h2>
-  <label for="aiSelectBlack" class="block text-gray-700 font-medium mb-2 mt-4">Select Black:</label>
-  <select id="aiSelectBlack" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-200 cursor-not-allowed" disabled>
-    <option value="human">Human</option>
-    {% for bot in bots %}
-    <option value="{{ bot[0] }}">{{ bot[1] }}</option>
-    {% endfor %}
-  </select>
-</div>
+  <div style="padding: 2rem;">
+    <h2 style="font-size: 1.25rem; font-weight: bold;">Black</h2>
+    <label for="aiSelectBlack" class="block text-gray-700 font-medium mb-2 mt-4">Select Black:</label>
+    <select id="aiSelectBlack" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+      <!-- <option value="human">Human</option> -->
+      {% for bot in bots %}
+      <option value="{{ bot[0] }}">{{ bot[1] }}</option>
+      {% endfor %}
+    </select>
+    <div style="margin-top:1.5rem;">
+      <input type="checkbox" id="left-checkbox" />
+      <label for="left-checkbox" style="margin-left:0.5rem;">Human</label>
+    </div>
+  </div>
 </aside>
 {% endblock %}
 
 {% block sidebar_right %}
-<aside class="sider-left">
-<div style="padding: 2rem;">
-  <h2 style="font-size: 1.25rem; font-weight: bold;">White</h2>
-  <label for="aiSelectWhite" class="block text-gray-700 font-medium mb-2 mt-4">Select White:</label>
-  <select id="aiSelectWhite" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-    
-    {% for bot in bots %}
-    <option value="{{ bot[0] }}">{{ bot[1] }}</option>
-    {% endfor %}
-  </select>
-</div>
+<aside class="sider-right">
+  <div style="padding: 2rem;">
+    <h2 style="font-size: 1.25rem; font-weight: bold;">White</h2>
+    <label for="aiSelectWhite" class="block text-gray-700 font-medium mb-2 mt-4">Select White:</label>
+    <select id="aiSelectWhite" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+      {% for bot in bots %}
+      <option value="{{ bot[0] }}">{{ bot[1] }}</option>
+      {% endfor %}
+    </select>
+    <div style="margin-top:1.5rem;">
+      <input type="checkbox" id="right-checkbox" />
+      <label for="right-checkbox" style="margin-left:0.5rem;">Human</label>
+    </div>
+  </div>
 </aside>
 {% endblock %}
 
@@ -41,13 +48,17 @@
     margin-top: 20px;
     border: 2px solid #333;
   }
-  #board-mask span {
-    user-select: none;
-    cursor: default;
+
+  @media (max-width: 1200px) {
+  .sider-left,
+  .sider-right,
+  .sample-bot-section {
+    display: none !important;
   }
+}
 </style>
 <div class="bg-gray-100 py-10">
-  <div class="max-w-screen-xl mx-auto px-4">
+  <div class="max-w-screen-xl mx-auto">
     <!-- Header Section
     <header class="text-center mb-8">
       <h1 class="text-4xl font-bold text-gray-800">Gomoku</h1>
@@ -57,25 +68,21 @@
     
 
     <!-- Game Canvas Section -->
-    <div class="bg-white p-6 rounded-lg shadow-md text-center">
-      <div style="position:relative;width:100%;max-width:600px;height:auto;margin:auto;">
+    <!-- <div class="bg-white p-6 rounded-lg shadow-md text-center"> -->
+      <div style="position:relative;width:100%;max-width:600px;height:auto;margin:auto;box-sizing:border-box;">
         <div id="phaser-container" style="width:100%;height:100%;"></div>
-        <div id="board-mask"
-             style="position:absolute;left:0;top:0;width:100%;height:100%;
-                    background:rgba(0,0,0,0.25);z-index:10;display:none;
-                    justify-content:center;align-items:center;color:white;font-size:2rem;">
-          <span>Waiting for new game...</span>
-        </div>
       </div>
       <br>
-      <button type="button" onclick="newGame()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New Game</button>
+      <div style="text-align:center;">
+        <button type="button" onclick="newGame()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New Game</button>
+      </div>
 
-    </div>
+    <!-- </div> -->
 
     <br>
       <div style="margin-top: 2rem;"></div>
       <!-- Sample Bot Code Section -->
-      <section class="bg-white p-6 rounded-lg shadow-md mb-8">
+      <section class="sample-bot-section bg-white p-6 rounded-lg shadow-md mb-8">
         <h2 class="text-xl font-bold mb-4">Sample Bot Code (Python)</h2>
         <pre class="bg-gray-100 p-4 rounded-lg border border-gray-300" style="white-space: pre-wrap; word-break: break-word;">
 <code class="language-python">
@@ -144,9 +151,10 @@ function preload() {}
 function create() {
   graphics = this.add.graphics();
   drawBoard();
+  showPhaserMask(); // 初始显示遮罩
 
   this.input.on('pointerdown', pointer => {
-    if (gameOver) return;
+    if (gameOver || maskRect) return; // 遮罩时禁止点击
     const x = Math.floor(pointer.x / GRID);
     const y = Math.floor(pointer.y / GRID);
     if (board[y][x] !== 0) return;
@@ -231,35 +239,48 @@ socket.on('update', (data) => {
     } else {
       msg = 'Draw!';
     }
-    showBoardMask(msg); // 显示遮罩和胜负信息
+    showPhaserMask(msg); // 显示胜负遮罩
     gameOver = true;
   } else {
-    hideBoardMask();
+    hidePhaserMask(); // 正常对局时隐藏遮罩
   }
 });
 
-function showBoardMask(msg = "Waiting for new game...") {
-  const mask = document.getElementById('board-mask');
-  mask.style.display = 'flex';
-  mask.querySelector('span').textContent = msg;
-}
-function hideBoardMask() {
-  document.getElementById('board-mask').style.display = 'none';
+let maskRect = null;
+let maskText = null;
+
+function showPhaserMask(msg = "Waiting for new game...") {
+  hidePhaserMask(); // 先清理旧的
+  maskRect = graphics.scene.add.rectangle(
+    BOARD_SIZE / 2, BOARD_SIZE / 2, BOARD_SIZE, BOARD_SIZE,
+    0x000000, 0.25
+  ).setDepth(1000);
+  maskText = graphics.scene.add.text(
+    BOARD_SIZE / 2, BOARD_SIZE / 2, msg,
+    { fontSize: Math.floor(BOARD_SIZE / 18) + 'px', color: '#fff', fontStyle: 'bold' }
+  ).setOrigin(0.5).setDepth(1001);
 }
 
-// 页面初始和newGame时显示遮罩
-showBoardMask();
+function hidePhaserMask() {
+  if (maskRect) { maskRect.destroy(); maskRect = null; }
+  if (maskText) { maskText.destroy(); maskText = null; }
+}
 
 // newGame按钮点击时
 function newGame() {
   const blackBot = document.getElementById('aiSelectBlack').value;
   const whiteBot = document.getElementById('aiSelectWhite').value;
+  const blackisHuman = document.getElementById('left-checkbox').checked;
+  const whiteisHuman = document.getElementById('right-checkbox').checked;
   socket.emit('new_game', {
     user_id: userId,
     black_bot: blackBot,
-    white_bot: whiteBot
+    white_bot: whiteBot,
+    black_is_human: blackisHuman,
+    white_is_human: whiteisHuman
   });
-  showBoardMask();
+
+  showPhaserMask(); // 新局等待
   gameOver = false;
   lastMove = null;
   board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
@@ -276,9 +297,29 @@ window.addEventListener('resize', () => {
   GRID = BOARD_SIZE / SIZE;
   phaserGame.scale.resize(BOARD_SIZE, BOARD_SIZE);
   drawBoard();
+  // 关键：如果遮罩存在，重绘遮罩
+  if (maskRect || maskText) {
+    // 你可以保存上一次的遮罩文字
+    let msg = maskText ? maskText.text : "Waiting for new game...";
+    showPhaserMask(msg);
+  }
 });
 </script>
 <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const left = document.getElementById('left-checkbox');
+  const right = document.getElementById('right-checkbox');
+  if (left && right) {
+    left.addEventListener('change', function() {
+      if (left.checked) right.checked = false;
+    });
+    right.addEventListener('change', function() {
+      if (right.checked) left.checked = false;
+    });
+  }
+});
+</script>
 {% endblock %}
