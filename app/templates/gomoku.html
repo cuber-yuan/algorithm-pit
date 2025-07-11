@@ -50,12 +50,31 @@
   }
 
   @media (max-width: 1200px) {
-  .sider-left,
-  .sider-right,
-  .sample-bot-section {
-    display: none !important;
+    .sider-left,
+    .sider-right,
+    .sample-bot-section {
+      display: none !important;
+    }
+    .gomoku-bottom-bar {
+      display: flex !important;
+    }
   }
-}
+  .gomoku-bottom-bar {
+    display: none;
+    justify-content: center;
+    gap: 2rem;
+    margin: 2rem auto 0 auto;
+    max-width: 600px;
+  }
+  .gomoku-bottom-bar .bottom-side {
+    flex: 1 1 0;
+    background: #f8fafc;
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    padding: 1.5rem;
+    min-width: 0;
+    max-width: 260px;
+  }
 </style>
 <div class="bg-gray-100 py-10">
   <div class="max-w-screen-xl mx-auto">
@@ -111,6 +130,36 @@ if __name__ == "__main__":
 </code>
         </pre>
       </section>
+
+      <!-- 新增：小屏幕下显示的下方栏 -->
+      <div class="gomoku-bottom-bar">
+        <div class="bottom-side">
+          <h2 style="font-size: 1.1rem; font-weight: bold;">Black</h2>
+          <label for="aiSelectBlackBottom" class="block text-gray-700 font-medium mb-2 mt-4">Select Black:</label>
+          <select id="aiSelectBlackBottom" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            {% for bot in bots %}
+            <option value="{{ bot[0] }}">{{ bot[1] }}</option>
+            {% endfor %}
+          </select>
+          <div style="margin-top:1.5rem;">
+            <input type="checkbox" id="left-checkbox-bottom" />
+            <label for="left-checkbox-bottom" style="margin-left:0.5rem;">Human</label>
+          </div>
+        </div>
+        <div class="bottom-side">
+          <h2 style="font-size: 1.1rem; font-weight: bold;">White</h2>
+          <label for="aiSelectWhiteBottom" class="block text-gray-700 font-medium mb-2 mt-4">Select White:</label>
+          <select id="aiSelectWhiteBottom" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            {% for bot in bots %}
+            <option value="{{ bot[0] }}">{{ bot[1] }}</option>
+            {% endfor %}
+          </select>
+          <div style="margin-top:1.5rem;">
+            <input type="checkbox" id="right-checkbox-bottom" />
+            <label for="right-checkbox-bottom" style="margin-left:0.5rem;">Human</label>
+          </div>
+        </div>
+      </div>
   </div>
 </div>
 
@@ -310,6 +359,7 @@ window.addEventListener('resize', () => {
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // 互斥逻辑：上方
   const left = document.getElementById('left-checkbox');
   const right = document.getElementById('right-checkbox');
   if (left && right) {
@@ -318,6 +368,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     right.addEventListener('change', function() {
       if (right.checked) left.checked = false;
+    });
+  }
+  // 互斥逻辑：下方
+  const leftBottom = document.getElementById('left-checkbox-bottom');
+  const rightBottom = document.getElementById('right-checkbox-bottom');
+  if (leftBottom && rightBottom) {
+    leftBottom.addEventListener('change', function() {
+      if (leftBottom.checked) rightBottom.checked = false;
+    });
+    rightBottom.addEventListener('change', function() {
+      if (rightBottom.checked) leftBottom.checked = false;
     });
   }
 });
