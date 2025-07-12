@@ -81,7 +81,7 @@ def _trigger_next_turn(game, sid):
             move_data = json.loads(output)
             ai_x, ai_y = move_data['x'], move_data['y']
         except (json.JSONDecodeError, KeyError):
-            print(f"AI for player {game.current_player} returned invalid data: {output}. Error: {e}")
+            print(f"AI for player {game.current_player} returned invalid data: {output}.")
             # 可以设置一个默认的惩罚机制，比如判负
             game.winner = 3 - game.current_player
             emit('update', {'board': game.board, 'winner': game.winner, 'error_msg': 'AI returned invalid move.'}, room=sid)

@@ -122,6 +122,48 @@ def main():
 if __name__ == "__main__":
     main()</code></pre>
     </section>
+
+    <!-- I/O Format Specification Section -->
+    <section class="sample-bot-section bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold mb-4">I/O Format Specification</h2>
+        
+        <div class="prose max-w-none">
+            <p>This document details the standard data exchange format between your AI bot and the referee system. Your bot must read a JSON string from standard input (stdin) and write its move as a JSON string to standard output (stdout).</p>
+
+            <h3 class="font-bold mt-4">1. Board Coordinate System</h3>
+            <p>The platform uses a 15x15 board. The coordinate system is defined as `board[y][x]`, where `y` is the row (0-14, top to bottom) and `x` is the column (0-14, left to right).</p>
+
+            <h3 class="font-bold mt-4">2. Input Format (Referee -> Bot)</h3>
+            <p>On your turn, the referee sends a single-line JSON string to your program's **stdin**. It contains:</p>
+            <ul>
+                <li><code>move_history</code> (Array): An ordered list of all moves. Each move is an object: <code>{"x": int, "y": int, "player": int}</code> (1=Black, 2=White).</li>
+                <li><code>your_side</code> (Integer): The side you are currently playing (1 for Black, 2 for White).</li>
+            </ul>
+
+            <h3 class="font-bold mt-4">3. Output Format (Bot -> Referee)</h3>
+            <p>Your AI must print a single-line JSON string to **stdout** with your chosen move:</p>
+            <pre class="bg-gray-100 p-2 rounded"><code>{"x": 8, "y": 7}</code></pre>
+
+            <h3 class="font-bold mt-4">Example: Turn 3 (Black to move)</h3>
+            <p>If Black played at (7,7) and White at (7,8), the board is:</p>
+            <pre class="bg-gray-100 p-2 rounded font-mono">
+    ... (x) ...
+       6 7 8
+ (y)┌─────────
+  6 │  . . .
+  7 │  . B .
+  8 │  . W .
+  9 │  . . .</pre>
+            <p>The referee sends this JSON to your Bot (as Black):</p>
+            <pre class="bg-gray-100 p-2 rounded"><code class="language-json">{
+  "move_history": [
+    {"x": 7, "y": 7, "player": 1},
+    {"x": 7, "y": 8, "player": 2}
+  ],
+  "your_side": 1
+}</code></pre>
+        </div>
+    </section>
   </div>
 </div>
 

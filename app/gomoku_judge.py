@@ -105,7 +105,7 @@ class GomokuJudge:
         # last_move: (player, x, y)
         data = {
             "move_history": self.move_history,
-            # "your_side": player, # your_side is implicit from the move history
+            "your_side": self.current_player, # 1 for Black, 2 for White
         }
         return json.dumps(data)
 
