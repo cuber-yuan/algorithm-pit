@@ -243,14 +243,15 @@ function newGame() {
   const whiteBot = document.getElementById('aiSelectWhite').value;
   const blackisHuman = document.getElementById('left-checkbox').checked;
   const whiteisHuman = document.getElementById('right-checkbox').checked;
+  
   socket.emit('new_game', {
     user_id: userId,
     black_bot: blackBot,
     white_bot: whiteBot,
-    black_is_human: blackisHuman,
-    white_is_human: whiteisHuman
+    black_is_human: blackisHuman, 
+    white_is_human: whiteisHuman  
   });
-  showPhaserMask();
+  showPhaserMask("Starting new game..."); 
   gameOver = false;
   lastMove = null;
   board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
@@ -276,9 +277,20 @@ window.addEventListener('resize', () => {
 document.addEventListener('DOMContentLoaded', function() {
   const left = document.getElementById('left-checkbox');
   const right = document.getElementById('right-checkbox');
+  
+  // 确保两个复选框的互斥逻辑是正确的
+  // 当前只允许一个人类玩家
   if (left && right) {
-    left.addEventListener('change', () => { if (left.checked) right.checked = false; });
-    right.addEventListener('change', () => { if (right.checked) left.checked = false; });
+    left.addEventListener('change', () => { 
+      if (left.checked) {
+        right.checked = false; 
+      }
+    });
+    right.addEventListener('change', () => { 
+      if (right.checked) {
+        left.checked = false;
+      }
+    });
   }
 });
 </script>

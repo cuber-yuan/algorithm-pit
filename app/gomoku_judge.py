@@ -1,4 +1,5 @@
 import json
+from .code_executor import CodeExecutor # 假设 CodeExecutor 在这里
 
 BOARD_SIZE = 15
 
@@ -33,8 +34,26 @@ class GomokuJudge:
         self.board = [[0 for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
         self.current_player = 1  # 1: 黑, 2: 白
         self.move_history = []
-        self.black_bot_code = ''
-        self.white_bot_code = ''
+        
+        # 新增：玩家类型和执行器
+        self.black_player_type = 'human'
+        self.white_player_type = 'bot'
+        self.black_executor = None
+        self.white_executor = None
+        self.winner = 0
+        self.game_id = None
+
+    def new_game(self, black_player_type, white_player_type, black_executor, white_executor):
+        """Initialize a new game with player configurations."""
+        self.board = [[0 for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
+        self.current_player = 1
+        self.move_history = []
+        self.winner = 0
+        
+        self.black_player_type = black_player_type
+        self.white_player_type = white_player_type
+        self.black_executor = black_executor
+        self.white_executor = white_executor
 
     def is_valid_move(self, x, y):
         return 0 <= x < BOARD_SIZE and 0 <= y < BOARD_SIZE and self.board[y][x] == 0
@@ -43,7 +62,7 @@ class GomokuJudge:
         if not self.is_valid_move(x, y):
             return False
         self.board[y][x] = self.current_player
-        self.move_history.append({'x':x, 'y':y})
+        self.move_history.append({'x':x, 'y':y, 'player': self.current_player}) # 记录下棋方
         self.current_player = 3 - self.current_player  # 1<->2
         return True
 
@@ -76,10 +95,8 @@ class GomokuJudge:
         # last_move: (player, x, y)
         data = {
             "move_history": self.move_history,
-            # "your_side": player,
-            # "last_move": last_move
+            # "your_side": player, # your_side is implicit from the move history
         }
-        # print(json.dumps(data))
         return json.dumps(data)
 
     def receive_action_from_ai(self):
@@ -89,11 +106,6 @@ class GomokuJudge:
         x, y = move["x"], move["y"]
         return x, y
 
-    def new_game(self):
-        """Initialize a new game"""
-        self.board = [[0 for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-        self.current_player = 1  # Reset to black player
-        self.move_history = []
         
 
 if __name__ == "__main__":
