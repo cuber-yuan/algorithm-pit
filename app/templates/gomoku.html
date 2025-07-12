@@ -129,7 +129,7 @@ if __name__ == "__main__":
 // --- Game Configuration & State ---
 function getBoardSize() {
   const padding = window.innerWidth < 600 ? 24 : 70;
-  return Math.min(window.innerWidth - padding, 600);
+  return Math.min(window.innerWidth - padding - 48, 600);
 }
 
 let SIZE = 15;
