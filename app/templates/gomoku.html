@@ -6,9 +6,7 @@
 <aside class="sider-left">
   <div style="padding: 2rem;">
     <h2 style="font-size: 1.25rem; font-weight: bold;">Black</h2>
-    <label for="aiSelectBlack" class="block text-gray-700 font-medium mb-2 mt-4">Select Black:</label>
     <select id="aiSelectBlack" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-      <!-- <option value="human">Human</option> -->
       {% for bot in bots %}
       <option value="{{ bot[0] }}">{{ bot[1] }}</option>
       {% endfor %}
@@ -25,7 +23,6 @@
 <aside class="sider-right">
   <div style="padding: 2rem;">
     <h2 style="font-size: 1.25rem; font-weight: bold;">White</h2>
-    <label for="aiSelectWhite" class="block text-gray-700 font-medium mb-2 mt-4">Select White:</label>
     <select id="aiSelectWhite" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
       {% for bot in bots %}
       <option value="{{ bot[0] }}">{{ bot[1] }}</option>
@@ -131,11 +128,10 @@ if __name__ == "__main__":
         </pre>
       </section>
 
-      <!-- 新增：小屏幕下显示的下方栏 -->
+
       <div class="gomoku-bottom-bar">
         <div class="bottom-side">
           <h2 style="font-size: 1.1rem; font-weight: bold;">Black</h2>
-          <label for="aiSelectBlackBottom" class="block text-gray-700 font-medium mb-2 mt-4">Select Black:</label>
           <select id="aiSelectBlackBottom" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             {% for bot in bots %}
             <option value="{{ bot[0] }}">{{ bot[1] }}</option>
@@ -148,7 +144,6 @@ if __name__ == "__main__":
         </div>
         <div class="bottom-side">
           <h2 style="font-size: 1.1rem; font-weight: bold;">White</h2>
-          <label for="aiSelectWhiteBottom" class="block text-gray-700 font-medium mb-2 mt-4">Select White:</label>
           <select id="aiSelectWhiteBottom" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
             {% for bot in bots %}
             <option value="{{ bot[0] }}">{{ bot[1] }}</option>
@@ -166,8 +161,7 @@ if __name__ == "__main__":
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
 <script>
 function getBoardSize() {
-  // 取屏幕宽度和最大600px的较小值
-  return Math.min(window.innerWidth, 600);
+  return Math.min(window.innerWidth-70, 600);
 }
 
 let SIZE = 15;
@@ -200,10 +194,10 @@ function preload() {}
 function create() {
   graphics = this.add.graphics();
   drawBoard();
-  showPhaserMask(); // 初始显示遮罩
+  showPhaserMask();
 
   this.input.on('pointerdown', pointer => {
-    if (gameOver || maskRect) return; // 遮罩时禁止点击
+    if (gameOver || maskRect) return;
     const x = Math.floor(pointer.x / GRID);
     const y = Math.floor(pointer.y / GRID);
     if (board[y][x] !== 0) return;
@@ -239,7 +233,6 @@ function drawBoard() {
     }
   }
 
-  // Highlight last move
   if (lastMove) {
     highlightMove(lastMove.x, lastMove.y);
   }
@@ -257,7 +250,6 @@ function highlightMove(x, y) {
   graphics.fillCircle(GRID / 2 + x * GRID, GRID / 2 + y * GRID, GRID / 10);
 }
 
-// Socket.io 相关逻辑
 const socket = io('/gomoku');
 socket.on('connect', () => {});
 
@@ -288,10 +280,10 @@ socket.on('update', (data) => {
     } else {
       msg = 'Draw!';
     }
-    showPhaserMask(msg); // 显示胜负遮罩
+    showPhaserMask(msg);
     gameOver = true;
   } else {
-    hidePhaserMask(); // 正常对局时隐藏遮罩
+    hidePhaserMask();
   }
 });
 
@@ -299,7 +291,7 @@ let maskRect = null;
 let maskText = null;
 
 function showPhaserMask(msg = "Waiting for new game...") {
-  hidePhaserMask(); // 先清理旧的
+  hidePhaserMask();
   maskRect = graphics.scene.add.rectangle(
     BOARD_SIZE / 2, BOARD_SIZE / 2, BOARD_SIZE, BOARD_SIZE,
     0x000000, 0.25
@@ -315,7 +307,7 @@ function hidePhaserMask() {
   if (maskText) { maskText.destroy(); maskText = null; }
 }
 
-// newGame按钮点击时
+
 function newGame() {
   const blackBot = document.getElementById('aiSelectBlack').value;
   const whiteBot = document.getElementById('aiSelectWhite').value;
@@ -329,7 +321,7 @@ function newGame() {
     white_is_human: whiteisHuman
   });
 
-  showPhaserMask(); // 新局等待
+  showPhaserMask();
   gameOver = false;
   lastMove = null;
   board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
@@ -340,15 +332,13 @@ function sendPlayerMove(x, y) {
   socket.emit('player_move', { user_id: userId, x, y, game_id: currentGameId });
 }
 
-// 当窗口大小变化时自适应
+
 window.addEventListener('resize', () => {
   BOARD_SIZE = getBoardSize();
   GRID = BOARD_SIZE / SIZE;
   phaserGame.scale.resize(BOARD_SIZE, BOARD_SIZE);
   drawBoard();
-  // 关键：如果遮罩存在，重绘遮罩
   if (maskRect || maskText) {
-    // 你可以保存上一次的遮罩文字
     let msg = maskText ? maskText.text : "Waiting for new game...";
     showPhaserMask(msg);
   }
@@ -359,7 +349,6 @@ window.addEventListener('resize', () => {
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // 互斥逻辑：上方
   const left = document.getElementById('left-checkbox');
   const right = document.getElementById('right-checkbox');
   if (left && right) {
@@ -370,7 +359,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (right.checked) left.checked = false;
     });
   }
-  // 互斥逻辑：下方
+
   const leftBottom = document.getElementById('left-checkbox-bottom');
   const rightBottom = document.getElementById('right-checkbox-bottom');
   if (leftBottom && rightBottom) {
