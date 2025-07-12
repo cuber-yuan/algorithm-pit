@@ -20,7 +20,7 @@ load_dotenv()
 
 gomoku_bp = Blueprint('gomoku', __name__)
 
-sessions = {}
+sessions = {} # sessions 结构将变为 { user_id: { 'active_game_id': '...', game_id_1: game_obj_1, game_id_2: game_obj_2 } }
 
 # --- 辅助函数 ---
 def _get_db_connection():
@@ -50,30 +50,37 @@ def _get_bot_executor(bot_id):
 
 def _trigger_next_turn(game, sid):
     """核心函数：根据当前玩家类型决定下一步操作"""
-    if game.winner != 0:
+    # 在开始时检查终止状态
+    if game.winner != 0 or game.is_terminated:
         return
 
     current_player_type = game.black_player_type if game.current_player == 1 else game.white_player_type
     
     if current_player_type == 'human':
-        # 等待人类玩家操作
         return
 
     if current_player_type == 'bot':
         executor = game.black_executor if game.current_player == 1 else game.white_executor
         if not executor:
-            print(f"Error: Player {game.current_player} is a bot but has no executor.")
             return
 
-        socketio.sleep(0.5) # 增加延迟，改善Bot vs Bot的观感
+        socketio.sleep(0.5)
+
+        # 在耗时操作后再次检查终止状态
+        if game.is_terminated:
+            return
 
         input_str = game.send_action_to_ai()
         output = executor.run(input_str)
         
+        # 在IO操作后再次检查
+        if game.is_terminated:
+            return
+
         try:
             move_data = json.loads(output)
             ai_x, ai_y = move_data['x'], move_data['y']
-        except (json.JSONDecodeError, KeyError) as e:
+        except (json.JSONDecodeError, KeyError):
             print(f"AI for player {game.current_player} returned invalid data: {output}. Error: {e}")
             # 可以设置一个默认的惩罚机制，比如判负
             game.winner = 3 - game.current_player
@@ -93,12 +100,13 @@ def _trigger_next_turn(game, sid):
         response = {
             'board': game.board,
             'ai_move': {'x': ai_x, 'y': ai_y, 'player': 3 - game.current_player},
-            'winner': game.winner
+            'winner': game.winner,
+            'game_id': game.game_id
         }
         emit('update', response, room=sid)
 
-        # 游戏继续，触发下一回合
-        if game.winner == 0:
+        # 递归调用前最后一次检查
+        if game.winner == 0 and not game.is_terminated:
             _trigger_next_turn(game, sid)
 
 # --- SocketIO 事件处理器 ---
@@ -106,17 +114,32 @@ def register_gomoku_events(socketio):
     @socketio.on('connect', namespace='/gomoku')
     def handle_connect():
         user_id = str(uuid4())
-        sessions[user_id] = GomokuJudge()
-        sessions[user_id].sid = request.sid
+        # 初始化用户的 session 存储
+        sessions[user_id] = {'sid': request.sid}
         join_room(request.sid)
-        emit('init', {'user_id': user_id, 'board': sessions[user_id].board}, room=request.sid)
+        # 不再创建默认的 GomokuJudge 实例
+        emit('init', {'user_id': user_id}, room=request.sid)
         print(f'new gomoku user connected: {user_id}')
 
     @socketio.on('new_game', namespace='/gomoku')
     def new_game(data):
         user_id = data['user_id']
-        game = sessions.get(user_id)
-        if not game: return
+        user_session = sessions.get(user_id)
+        if not user_session: return
+
+        # 1. 终止该用户所有正在运行的旧游戏
+        for key, value in user_session.items():
+            if isinstance(value, GomokuJudge):
+                value.terminate()
+
+        # 2. 创建一个全新的游戏实例
+        game = GomokuJudge()
+        game.game_id = str(uuid.uuid4())
+        
+        # 3. 将新游戏实例存入用户会话中 (可以先清理旧的)
+        # 为了简化，我们只保留sid和新的游戏实例
+        sid = user_session['sid']
+        sessions[user_id] = {'sid': sid, game.game_id: game}
 
         # 获取前端选择
         black_is_human = data.get('black_is_human', False)
@@ -138,22 +161,31 @@ def register_gomoku_events(socketio):
             black_executor=black_executor,
             white_executor=white_executor
         )
-        game.game_id = str(uuid.uuid4())
 
-        emit('update', {'board': game.board, 'game_id': game.game_id}, room=game.sid)
+        # 4. 发送一个明确的 `game_started` 事件
+        emit('game_started', {'board': game.board, 'game_id': game.game_id}, room=sid)
 
-        # 开始游戏循环
-        _trigger_next_turn(game, game.sid)
+        # 5. 开始新游戏的游戏循环
+        _trigger_next_turn(game, sid)
 
     @socketio.on('player_move', namespace='/gomoku')
     def handle_player_move(data):
-        user_id = data['user_id']
-        game = sessions.get(user_id)
-        sid = request.sid
+        user_id = data.get('user_id')
+        game_id = data.get('game_id') # 获取前端传来的 game_id
+        user_session = sessions.get(user_id)
 
-        # 验证
-        if not game or game.game_id != data.get('game_id') or game.winner != 0:
+        # 验证 game_id 是否存在
+        if not user_id or not game_id or not user_session:
             return
+
+        # 3. 使用 game_id 精确查找游戏实例
+        game = user_session.get(game_id)
+        
+        # 核心验证：确保游戏存在，且未结束
+        if not game or game.winner != 0:
+            return
+        
+        sid = user_session['sid']
 
         is_black_human_turn = game.current_player == 1 and game.black_player_type == 'human'
         is_white_human_turn = game.current_player == 2 and game.white_player_type == 'human'
@@ -163,7 +195,6 @@ def register_gomoku_events(socketio):
 
         x, y = data['x'], data['y']
         if not game.apply_move(x, y):
-            # 无效落子，可以给前端发一个错误提示，但暂时忽略
             return
 
         winner = game.check_win(x, y)
@@ -173,22 +204,27 @@ def register_gomoku_events(socketio):
         response = {
             'board': game.board,
             'move': {'x': x, 'y': y, 'player': 3 - game.current_player},
-            'winner': game.winner
+            'winner': game.winner,
+            'game_id': game.game_id # 每次更新都带上 game_id
         }
         emit('update', response, room=sid)
 
-        # 移交控制权给下一回合
         if game.winner == 0:
             _trigger_next_turn(game, sid)
 
     @socketio.on('disconnect', namespace='/gomoku')
     def handle_disconnect():
-        # ... (保持不变) ...
-        for user_id, game in list(sessions.items()):
-            if hasattr(game, 'sid') and game.sid == request.sid:
-                # 可以在这里清理执行器等资源
-                if game.black_executor: game.black_executor.cleanup()
-                if game.white_executor: game.white_executor.cleanup()
-                del sessions[user_id]
-                print(f'User {user_id} disconnected and session cleaned up')
+        user_id_to_del = None
+        for user_id, session_data in sessions.items():
+            if session_data.get('sid') == request.sid:
+                # 清理该用户的所有游戏实例
+                for key, value in list(session_data.items()):
+                    if isinstance(value, GomokuJudge):
+                        if value.black_executor: value.black_executor.cleanup()
+                        if value.white_executor: value.white_executor.cleanup()
+                user_id_to_del = user_id
                 break
+        
+        if user_id_to_del:
+            del sessions[user_id_to_del]
+            print(f'User {user_id_to_del} disconnected and all sessions cleaned up')

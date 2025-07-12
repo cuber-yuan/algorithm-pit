@@ -223,8 +223,26 @@ const socket = io('/gomoku');
 socket.on('connect', () => {});
 socket.on('init', (data) => { userId = data.user_id; });
 
+// NEW: Listen for the specific game_started event
+socket.on('game_started', (data) => {
+    console.log(`New game started with ID: ${data.game_id}`);
+    currentGameId = data.game_id;
+    board = data.board;
+    lastMove = null;
+    gameOver = false;
+    
+    drawBoard();
+    hidePhaserMask();
+});
+
 socket.on('update', (data) => {
-  if (data.game_id) currentGameId = data.game_id;
+  // The update event is now only for moves and game end.
+  // We MUST check if the update belongs to our current game.
+  if (!currentGameId || data.game_id !== currentGameId) {
+      console.log(`Ignoring update for irrelevant game: ${data.game_id}`);
+      return; 
+  }
+
   board = data.board;
   lastMove = data.move || data.ai_move || null;
   drawBoard();
@@ -233,16 +251,18 @@ socket.on('update', (data) => {
     let msg = data.winner === 1 ? 'Black wins!' : (data.winner === 2 ? 'White wins!' : 'Draw!');
     showPhaserMask(msg);
     gameOver = true;
-  } else {
-    hidePhaserMask();
   }
 });
 
 function newGame() {
+  // ... (获取 blackBot, whiteBot, isHuman 等) ...
   const blackBot = document.getElementById('aiSelectBlack').value;
   const whiteBot = document.getElementById('aiSelectWhite').value;
   const blackisHuman = document.getElementById('left-checkbox').checked;
   const whiteisHuman = document.getElementById('right-checkbox').checked;
+  
+  // 客户端在请求新游戏时，也应该显示遮罩，并重置一些状态
+  showPhaserMask("Starting new game..."); 
   
   socket.emit('new_game', {
     user_id: userId,
@@ -251,11 +271,6 @@ function newGame() {
     black_is_human: blackisHuman, 
     white_is_human: whiteisHuman  
   });
-  showPhaserMask("Starting new game..."); 
-  gameOver = false;
-  lastMove = null;
-  board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
-  drawBoard();
 }
 
 function sendPlayerMove(x, y) {

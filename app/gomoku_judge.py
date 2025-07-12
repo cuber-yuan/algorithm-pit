@@ -42,6 +42,16 @@ class GomokuJudge:
         self.white_executor = None
         self.winner = 0
         self.game_id = None
+        self.is_terminated = False # <-- 新增终止标志
+
+    def terminate(self):
+        """Mark the game as terminated to stop its execution loop."""
+        self.is_terminated = True
+        # 可以在这里清理和此游戏相关的特定资源
+        # if self.black_executor:
+        #     self.black_executor.cleanup()
+        # if self.white_executor:
+        #     self.white_executor.cleanup()
 
     def new_game(self, black_player_type, white_player_type, black_executor, white_executor):
         """Initialize a new game with player configurations."""
