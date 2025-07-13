@@ -95,7 +95,7 @@ def extract_direction_from_action(action: Action) -> int:
 
 
 # === 数据类 ===
-@dataclass(order=True, frozen=False)
+@dataclass(order=True, frozen=True)
 class DisappearLog:
     x: int
     y: int
@@ -367,13 +367,24 @@ class TankJudge:
                         has_steel[y][x] = True
 
             bx, by = BASE_X[0], BASE_Y[0]
-            for dx in [-1, 0, 1]:
-                for dy in [0, 1]:
-                    x, y = bx + dx, by + dy
-                    if coord_valid(x, y):
-                        has_brick[y][x] = (dx == 0 and dy == 1)
-                        has_water[y][x] = False
-                        has_steel[y][x] = False
+            # Correctly create a U-shaped brick wall around the base
+            wall_coords = [
+                (bx - 1, by), (bx + 1, by),
+                (bx - 1, by + 1), (bx, by + 1), (bx + 1, by + 1)
+            ]
+            for x, y in wall_coords:
+                if coord_valid(x, y):
+                    has_brick[y][x] = True
+                    has_water[y][x] = False
+                    has_steel[y][x] = False
+            
+            # Ensure the base position itself is clear
+            if coord_valid(bx, by):
+                has_brick[by][bx] = False
+                has_water[by][bx] = False
+                has_steel[by][bx] = False
+
+            # Clear tank starting positions near the base
             for dx in [-2, 0, 2]:
                 if coord_valid(bx + dx, by):
                     has_brick[by][bx + dx] = False
@@ -456,6 +467,9 @@ class TankBotInterface:
         # Turn management
         self.pending_moves = {} # e.g., {'top': [Action, Action], 'bottom': [Action, Action]}
 
+        # --- 新增: 存储完整的历史记录 ---
+        self.action_history = {'top': [], 'bottom': []}
+
         # Initialize game field
         judge = TankJudge()
         judge.initialize_field()
@@ -500,6 +514,10 @@ class TankBotInterface:
         """Processes the collected moves for one turn."""
         if not self.are_all_moves_collected():
             return
+
+        # --- 新增: 将当前回合的行动存入历史记录 ---
+        self.action_history['top'].append([int(a) for a in self.pending_moves['top']])
+        self.action_history['bottom'].append([int(a) for a in self.pending_moves['bottom']])
 
         # Map 'top'/'bottom' to side 0/1 and set actions
         top_actions = self.pending_moves['top']
@@ -557,29 +575,29 @@ class TankBotInterface:
         }
 
     def get_bot_input(self, player_side: str) -> str:
-        """Generates the JSON input string for an AI bot."""
+        """
+        Generates the JSON input string for an AI bot,
+        now fully compatible with the provided JSON examples.
+        """
         side_idx = 0 if player_side == 'top' else 1
+        opponent_side_name = 'bottom' if player_side == 'top' else 'top'
         
-        # For the first turn, the bot needs the full map info.
-        if self.field.current_turn == 1:
-            return json.dumps({
-                "requests": [{
-                    "brickfield": self.brick_binary,
-                    "waterfield": self.water_binary,
-                    "steelfield": self.steel_binary,
-                    "mySide": side_idx
-                }],
-                "responses": []
-            })
-        else:
-            # For subsequent turns, provide the opponent's last action.
-            opponent_side_idx = 1 - side_idx
-            opponent_actions = self.field.previous_actions[self.field.current_turn - 1][opponent_side_idx]
-            
-            return json.dumps({
-                "requests": [[int(act) for act in opponent_actions]],
-                "responses": [] # Responses would be for a turn-based game, not needed here
-            })
+        my_history = self.action_history[player_side]
+        opponent_history = self.action_history[opponent_side_name]
+
+        # The initial map object is always the first element of 'requests'
+        initial_map_obj = {
+            "brickfield": self.brick_binary,
+            "mySide": side_idx,
+            "steelfield": self.steel_binary,
+            "waterfield": self.water_binary
+        }
+
+        # Construct the final JSON object
+        return json.dumps({
+            "requests": [initial_map_obj] + opponent_history,
+            "responses": my_history
+        })
 
     # The following methods are from the old protocol and are no longer used directly by the server.
     # They are kept for reference or potential single-player testing.

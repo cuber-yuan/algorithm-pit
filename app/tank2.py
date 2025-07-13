@@ -84,40 +84,12 @@ def _start_new_turn(game, sid):
         input_str = game.get_bot_input('top')
         print(f"Running bot for top player with input: {input_str}")
         
-        # --- 修改后的调试代码 ---
-        code_str = game.top_executor.code
-        lines = code_str.splitlines()
-        line_count = len(lines)
-        
-        print("--- Verifying Bot Code (Top Player) ---")
-        print(f"Total lines: {line_count}")
-        print("First 5 lines:")
-        print('\n'.join(lines[:5]))
-        print("Last 5 lines:")
-        print('\n'.join(lines[-5:]))
-        print("------------------------------------")
-        # --- 调试代码结束 ---
-
         output = game.top_executor.run(input_str)
         game.collect_move('top', json.loads(output))
 
     if game.bottom_player_type == 'bot':
         input_str = game.get_bot_input('bottom')
         print(f"Running bot for bottom player with input: {input_str}")
-
-        # --- 修改后的调试代码 ---
-        code_str = game.bottom_executor.code
-        lines = code_str.splitlines()
-        line_count = len(lines)
-
-        print("--- Verifying Bot Code (Bottom Player) ---")
-        print(f"Total lines: {line_count}")
-        print("First 5 lines:")
-        print('\n'.join(lines[:5]))
-        print("Last 5 lines:")
-        print('\n'.join(lines[-5:]))
-        print("------------------------------------")
-        # --- 调试代码结束 ---
 
         output = game.bottom_executor.run(input_str)
         game.collect_move('bottom', json.loads(output))
@@ -151,6 +123,8 @@ def register_tank_events(socketio):
         game = TankBotInterface() # Or your main game class
         game.game_id = str(uuid.uuid4())
         
+        game.field.debug_print();
+
         sid = user_session['sid']
         sessions[user_id] = {'sid': sid, game.game_id: game}
 
