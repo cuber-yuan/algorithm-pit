@@ -36,6 +36,7 @@ def save_bot_to_db(user_id, bot_name, description, language, source_code=None, f
         database=os.getenv('DB_NAME'),
         charset='utf8mb4'
     )
+    print(f"Saving bot for user_id: {user_id}, bot_name: {bot_name}, game: {game}")
     cursor = conn.cursor()
     cursor.execute(
         """
@@ -55,7 +56,8 @@ def upload_bot():
     language = request.form.get('language')
     source_code = request.form.get('sourceCode')
     bot_file = request.files.get('botFile')
-    game = 'gomoku'  # TODO - 这里可以根据实际情况修改
+    game = request.form.get('game')
+    
     # username = request.form.get('username')  # 客户端传递的用户名
 
     # 验证输入

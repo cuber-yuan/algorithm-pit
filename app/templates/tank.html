@@ -4,55 +4,140 @@
 
 {% block sidebar_left %}
 <aside class="sider-left">
-<div style="padding: 2rem;">
-  <h2 style="font-size: 1.25rem; font-weight: bold;">Top</h2>
-  <label for="aiSelectBlack" class="block text-gray-700 font-medium mb-2 mt-4">Select Top:</label>
-  <select id="aiSelectBlack" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-200 cursor-not-allowed" disabled>
-    <option value="human">Human</option>
-    {% for bot in bots %}
-    <option value="{{ bot[0] }}">{{ bot[1] }}</option>
-    {% endfor %}
-  </select>
-</div>
+  <div style="padding: 2rem;">
+    <h2 style="font-size: 1.25rem; font-weight: bold;">Top</h2>
+    <select id="aiSelectBlack" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+      {% for bot in bots %}
+      <option value="{{ bot[0] }}">{{ bot[1] }}</option>
+      {% endfor %}
+    </select>
+    <div style="margin-top:1.5rem;">
+      <input type="checkbox" id="left-checkbox" />
+      <label for="left-checkbox" style="margin-left:0.5rem;">Human</label>
+    </div>
+  </div>
 </aside>
 {% endblock %}
 
 {% block sidebar_right %}
-<aside class="sider-left">
-<div style="padding: 2rem;">
-  <h2 style="font-size: 1.25rem; font-weight: bold;">Bottom</h2>
-  <label for="aiSelectWhite" class="block text-gray-700 font-medium mb-2 mt-4">Select Bottom:</label>
-  <select id="aiSelectWhite" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-    
-    {% for bot in bots %}
-    <option value="{{ bot[0] }}">{{ bot[1] }}</option>
-    {% endfor %}
-  </select>
-</div>
+<aside class="sider-right">
+  <div style="padding: 2rem;">
+    <h2 style="font-size: 1.25rem; font-weight: bold;">Bottom</h2>
+    <select id="aiSelectWhite" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+      {% for bot in bots %}
+      <option value="{{ bot[0] }}">{{ bot[1] }}</option>
+      {% endfor %}
+    </select>
+    <div style="margin-top:1.5rem;">
+      <input type="checkbox" id="right-checkbox" />
+      <label for="right-checkbox" style="margin-left:0.5rem;">Human</label>
+    </div>
+  </div>
 </aside>
 {% endblock %}
 
 {% block content %}
-<div class="bg-gray-100 py-10">
-    <div class="max-w-screen-md mx-auto px-4">
-        <section class="bg-white p-6 rounded-lg shadow-md mb-8">
-            <h2 class="text-2xl font-bold mb-2 text-blue-600 text-center">Tank Battle</h2>
-            <p class="text-gray-700 leading-relaxed text-center">
-                Each turn, click a tank to select its action.<br>
-                After both tanks have chosen, actions will be executed simultaneously.<br>
-                Destroy the enemy base to win. Bullets destroy bricks, bases, and tanks, but not steel walls.<br>
-                Protect your base! If it's destroyed, you lose.
-            </p>
-        </section>
-        <div class="bg-white p-6 rounded-lg shadow-md text-center">
-            <button id="newGameBtn" type="button"
-                class="mb-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New Game</button>
-            <div id="phaser-container" class="mx-auto" style="width:600px;height:600px;"></div>
-            <p id="turnCounter" class="mt-4 text-lg font-semibold">Turn: 1</p>
-        </div>
-    </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
 <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-<script src="{{ url_for('static', filename='tank2/tank2.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+<!-- The custom tank logic is now loaded at the end of the body -->
+
+<style>
+  canvas {
+    background: #c2d1a2; /* A grassy green for tanks */
+    margin-top: 20px;
+    border: 2px solid #333;
+  }
+
+  /* --- Responsive Layout Control (from Gomoku) --- */
+  @media (max-width: 1200px) {
+    /* Target the main layout container from base.html */
+    .layout-main {
+      flex-direction: column; /* Stack items vertically */
+      align-items: center;   /* Center them horizontally */
+    }
+
+    /* Move the game board to the top */
+    .main-content {
+      order: -1; 
+    }
+
+    /* Restyle the sidebars for their new position */
+    .sider-left, .sider-right {
+      position: static;
+      width: 100%;
+      max-width: 500px;
+      margin-top: 1rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .sider-right {
+        margin-top: 1rem;
+    }
+  }
+</style>
+
+<div class="bg-gray-100 py-10">
+  <div class="max-w-screen-xl mx-auto">
+    <!-- Game Canvas Section -->
+    <div style="position:relative;width:100%;max-width:600px;height:auto;margin:auto;box-sizing:border-box;">
+      <div id="phaser-container" style="width:100%;height:100%;"></div>
+    </div>
+    <br>
+    <div style="text-align:center;">
+        <p id="turnCounter" class="mt-4 text-lg font-semibold">Turn: 1</p>
+        <button id="newGameBtn" type="button" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New Game</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Game Configuration & State ---
+function getCanvasSize() {
+  const padding = window.innerWidth < 600 ? 24 : 70;
+  return Math.min(window.innerWidth - padding - 48, 600);
+}
+
+let CANVAS_SIZE = getCanvasSize();
+let phaserGame; // Will be initialized in tank2.js
+let graphics; // For drawing the mask
+
+// --- UI Mask Functions (from Gomoku) ---
+let maskRect = null;
+let maskText = null;
+
+function showPhaserMask(msg = "Waiting for new game...") {
+  if (!phaserGame || !phaserGame.scene.scenes[0]) return; // Don't run if Phaser isn't ready
+  const scene = phaserGame.scene.scenes[0];
+  hidePhaserMask();
+  maskRect = scene.add.rectangle(CANVAS_SIZE / 2, CANVAS_SIZE / 2, CANVAS_SIZE, CANVAS_SIZE, 0x000000, 0.35).setDepth(1000);
+  maskText = scene.add.text(CANVAS_SIZE / 2, CANVAS_SIZE / 2, msg, { fontSize: Math.floor(CANVAS_SIZE / 18) + 'px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(1001);
+}
+
+function hidePhaserMask() {
+  if (maskRect) { maskRect.destroy(); maskRect = null; }
+  if (maskText) { maskText.destroy(); maskText = null; }
+}
+
+// --- Event Listeners ---
+window.addEventListener('resize', () => {
+  CANVAS_SIZE = getCanvasSize();
+  if (phaserGame) {
+    phaserGame.scale.resize(CANVAS_SIZE, CANVAS_SIZE);
+    // Redraw mask if it exists
+    if (maskRect || maskText) {
+      let msg = maskText ? maskText.text : "Waiting for new game...";
+      showPhaserMask(msg);
+    }
+  }
+});
+
+// The rest of the game logic is in tank2.js, which will be loaded after this script.
+// We ensure the DOM is loaded before trying to access elements in tank2.js
+document.addEventListener('DOMContentLoaded', () => {
+    const script = document.createElement('script');
+    script.src = "{{ url_for('static', filename='tank2/tank2.js') }}";
+    document.body.appendChild(script);
+});
+</script>
 {% endblock %}

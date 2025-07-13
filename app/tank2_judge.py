@@ -94,6 +94,7 @@ def extract_direction_from_action(action: Action) -> int:
     return -1
 
 
+# === 数据类 ===
 @dataclass(order=True, frozen=False)
 class DisappearLog:
     x: int
@@ -102,6 +103,7 @@ class DisappearLog:
     turn: int
 
 
+# === 核心游戏逻辑类 ===
 class TankField:
     def __init__(self, has_brick: List[int], has_water: List[int], has_steel: List[int], my_side: int):
         self.my_side = my_side
@@ -305,6 +307,7 @@ class TankField:
         print("=" * 30)
 
 
+# === 地图生成类 ===
 class TankJudge:
     def __init__(self):
         self.field_binary = [0, 0, 0]
@@ -435,106 +438,150 @@ class TankJudge:
         self.water_binary = compress(has_water)
         self.steel_binary = compress(has_steel)
 
-# === 通信接口类 ===
+
+# === 通信接口类 (Refactored) ===
 class TankBotInterface:
     def __init__(self):
-        self.field: Optional[TankField] = None
-        self.reader = json
-        self.my_side = 0
-        self.data = ''
-        self.global_data = ''
+        # Game state properties
+        self.game_id = None
+        self.is_terminated = False
+        self.winner = None # 'top', 'bottom', 'draw', or None
 
-        # by cuber
-        self.judge = TankJudge()
-        self.judge.initialize_field()
+        # Player configuration
+        self.top_player_type = 'human'
+        self.bottom_player_type = 'bot'
+        self.top_executor = None
+        self.bottom_executor = None
 
-    def read_input(self):
-        raw = ""
-        while True:
-            try:
-                line = input()
-                if not line.strip():
-                    continue
-                raw += line.strip()
-                if line.strip().endswith('}') or line.strip().endswith(']'):
-                    break
-            except EOFError:
-                break
+        # Turn management
+        self.pending_moves = {} # e.g., {'top': [Action, Action], 'bottom': [Action, Action]}
 
-        input_json = json.loads(raw)
+        # Initialize game field
+        judge = TankJudge()
+        judge.initialize_field()
+        
+        # Store the compressed map data
+        self.brick_binary = judge.field_binary
+        self.water_binary = judge.water_binary
+        self.steel_binary = judge.steel_binary
 
-        if isinstance(input_json, dict):
-            if 'requests' in input_json and 'responses' in input_json:
-                requests = input_json['requests']
-                responses = input_json['responses']
-                for i in range(len(requests)):
-                    self._process_request_or_response(requests[i], is_opponent=True)
-                    if i < len(responses):
-                        self._process_request_or_response(responses[i], is_opponent=False)
-                self.data = input_json.get('data', '')
-                self.global_data = input_json.get('globaldata', '')
-            else:
-                self._process_request_or_response(input_json, is_opponent=True)
+        # Side 0 (Blue) is the 'top' player, Side 1 (Red) is the 'bottom' player
+        self.field = TankField(self.brick_binary, self.water_binary, self.steel_binary, 0)
 
-    def _process_request_or_response(self, value, is_opponent: bool):
-        if isinstance(value, list):
-            # 动作数组
-            side = 1 - self.my_side if is_opponent else self.my_side
-            for tank in range(TANKS_PER_SIDE):
-                self.field.next_action[side][tank] = Action(value[tank])
-            if is_opponent:
-                self.field.do_action()
-        elif isinstance(value, dict):
-            # 初始化字段
-            brick = value["brickfield"]
-            water = value["waterfield"]
-            steel = value["steelfield"]
-            self.my_side = value["mySide"]
-            self.field = TankField(brick, water, steel, self.my_side)
+    def terminate(self):
+        """Marks the game as terminated and cleans up resources."""
+        self.is_terminated = True
+        if self.top_executor: self.top_executor.cleanup()
+        if self.bottom_executor: self.bottom_executor.cleanup()
 
-    def submit_action(self, act0: Action, act1: Action, debug: str = "", data: str = "", global_data: str = "", exit_after=True):
-        result = {
-            "response": [act0, act1]
+    def configure_players(self, top_player_type, bottom_player_type, top_executor, bottom_executor):
+        """Sets up the players for the game."""
+        self.top_player_type = top_player_type
+        self.bottom_player_type = bottom_player_type
+        self.top_executor = top_executor
+        self.bottom_executor = bottom_executor
+
+    def start_new_turn(self):
+        """Prepares the game for a new turn by clearing pending moves."""
+        self.pending_moves = {}
+
+    def collect_move(self, player_side: str, move_data: dict):
+        """Collects an action from a player for the current turn."""
+        # The bot returns {"response": [act0, act1]}
+        # The human player will send actions in the same format
+        actions = move_data.get("response", [-2, -2]) # [-2 is INVALID]
+        self.pending_moves[player_side] = [Action(actions[0]), Action(actions[1])]
+
+    def are_all_moves_collected(self) -> bool:
+        """Checks if moves from both players have been received."""
+        return 'top' in self.pending_moves and 'bottom' in self.pending_moves
+
+    def process_turn(self):
+        """Processes the collected moves for one turn."""
+        if not self.are_all_moves_collected():
+            return
+
+        # Map 'top'/'bottom' to side 0/1 and set actions
+        top_actions = self.pending_moves['top']
+        bottom_actions = self.pending_moves['bottom']
+        
+        self.field.next_action[0][0] = top_actions[0]
+        self.field.next_action[0][1] = top_actions[1]
+        self.field.next_action[1][0] = bottom_actions[0]
+        self.field.next_action[1][1] = bottom_actions[1]
+
+        # Execute the turn
+        self.field.do_action()
+
+    def check_winner(self) -> Optional[str]:
+        """Checks the game result and updates the winner property."""
+        result = self.field.get_game_result()
+        if result == GameResult.NOT_FINISHED:
+            self.winner = None
+        elif result == GameResult.DRAW:
+            self.winner = 'draw'
+        elif result == GameResult.BLUE: # Blue is 'top' player
+            self.winner = 'top'
+        elif result == GameResult.RED: # Red is 'bottom' player
+            self.winner = 'bottom'
+        return self.winner
+
+    def get_state(self) -> dict:
+        """Serializes the current game state for the frontend."""
+        tanks = []
+        for side_idx, side_name in enumerate(['top', 'bottom']):
+            for tank_idx in range(TANKS_PER_SIDE):
+                tanks.append({
+                    'side': side_name,
+                    'id': tank_idx,
+                    'x': self.field.tank_x[side_idx][tank_idx],
+                    'y': self.field.tank_y[side_idx][tank_idx],
+                    'alive': self.field.tank_alive[side_idx][tank_idx]
+                })
+        
+        return {
+            'field': self.field.game_field,
+            'tanks': tanks,
+            'bases': {
+                'top': {'alive': self.field.base_alive[0]},
+                'bottom': {'alive': self.field.base_alive[1]}
+            },
+            'turn': self.field.current_turn,
+            'max_turn': MAX_TURN
         }
-        if debug:
-            result["debug"] = debug
-        if data:
-            result["data"] = data
-        if global_data:
-            result["globaldata"] = global_data
-        print(json.dumps(result))
-        if exit_after:
-            sys.exit(0)
-        else:
-            self.field.next_action[self.my_side][0] = act0
-            self.field.next_action[self.my_side][1] = act1
-            print(">>>BOTZONE_REQUEST_KEEP_RUNNING<<<")
 
-
-    def send_to_client(self, first_round: bool, mySide: int,max_turn=100):
-        if first_round:
-            # 发送地图初始化数据
-            output = {
-                "request": [{
-                
-                    "brickfield": self.judge.field_binary,
-                    "waterfield": self.judge.water_binary,
-                    "steelfield": self.judge.steel_binary,
-                    "mySide": mySide,
-                    
-                
+    def get_bot_input(self, player_side: str) -> str:
+        """Generates the JSON input string for an AI bot."""
+        side_idx = 0 if player_side == 'top' else 1
+        
+        # For the first turn, the bot needs the full map info.
+        if self.field.current_turn == 1:
+            return json.dumps({
+                "requests": [{
+                    "brickfield": self.brick_binary,
+                    "waterfield": self.water_binary,
+                    "steelfield": self.steel_binary,
+                    "mySide": side_idx
                 }],
-                
-            }
-            print(json.dumps(output))
-            return json.dumps(output)
+                "responses": []
+            })
         else:
-            # 发送中间回合动作请求，可以按需求扩展
-            output = {
-                "command": "request",
-                "data": self.data,
-                "globaldata": self.global_data
-                # 这里可加更多运行时信息
-            }
-            print(json.dumps(output))
-            return json.dumps(output)
+            # For subsequent turns, provide the opponent's last action.
+            opponent_side_idx = 1 - side_idx
+            opponent_actions = self.field.previous_actions[self.field.current_turn - 1][opponent_side_idx]
+            
+            return json.dumps({
+                "requests": [[int(act) for act in opponent_actions]],
+                "responses": [] # Responses would be for a turn-based game, not needed here
+            })
+
+    # The following methods are from the old protocol and are no longer used directly by the server.
+    # They are kept for reference or potential single-player testing.
+    def read_input(self):
+        pass
+    def _process_request_or_response(self, value, is_opponent: bool):
+        pass
+    def submit_action(self, act0: Action, act1: Action, debug: str = "", data: str = "", global_data: str = "", exit_after=True):
+        pass
+    def send_to_client(self, first_round: bool, mySide: int,max_turn=100):
+        pass

@@ -129,7 +129,10 @@
 </div>
 
 <script>
+    let currentGameName = '';
+
     function openUploadModal(gameName) {
+        currentGameName = gameName;
         document.getElementById('modalTitle').textContent = `Upload Bot Code for ${gameName}`;
         document.getElementById('uploadModal').classList.remove('hidden');
     }
@@ -137,6 +140,7 @@
     function closeUploadModal() {
         document.getElementById('uploadModal').classList.add('hidden');
         document.getElementById('uploadForm').reset(); // Reset the form fields
+        currentGameName = '';
     }
 
     document.getElementById('uploadForm').onsubmit = async function (e) {
@@ -170,6 +174,8 @@
         formData.append('botName', botName);
         formData.append('botDescription', botDescription);
         formData.append('language', language);
+        formData.append('game', currentGameName);
+        
         if (file) {
             formData.append('botFile', file);
         }
