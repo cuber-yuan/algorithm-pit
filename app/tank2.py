@@ -82,11 +82,43 @@ def _start_new_turn(game, sid):
     # Automatically run bots
     if game.top_player_type == 'bot':
         input_str = game.get_bot_input('top')
+        print(f"Running bot for top player with input: {input_str}")
+        
+        # --- 修改后的调试代码 ---
+        code_str = game.top_executor.code
+        lines = code_str.splitlines()
+        line_count = len(lines)
+        
+        print("--- Verifying Bot Code (Top Player) ---")
+        print(f"Total lines: {line_count}")
+        print("First 5 lines:")
+        print('\n'.join(lines[:5]))
+        print("Last 5 lines:")
+        print('\n'.join(lines[-5:]))
+        print("------------------------------------")
+        # --- 调试代码结束 ---
+
         output = game.top_executor.run(input_str)
         game.collect_move('top', json.loads(output))
 
     if game.bottom_player_type == 'bot':
         input_str = game.get_bot_input('bottom')
+        print(f"Running bot for bottom player with input: {input_str}")
+
+        # --- 修改后的调试代码 ---
+        code_str = game.bottom_executor.code
+        lines = code_str.splitlines()
+        line_count = len(lines)
+
+        print("--- Verifying Bot Code (Bottom Player) ---")
+        print(f"Total lines: {line_count}")
+        print("First 5 lines:")
+        print('\n'.join(lines[:5]))
+        print("Last 5 lines:")
+        print('\n'.join(lines[-5:]))
+        print("------------------------------------")
+        # --- 调试代码结束 ---
+
         output = game.bottom_executor.run(input_str)
         game.collect_move('bottom', json.loads(output))
     
@@ -122,16 +154,23 @@ def register_tank_events(socketio):
         sid = user_session['sid']
         sessions[user_id] = {'sid': sid, game.game_id: game}
 
-        # Get player selections from the frontend
-        top_bot_id = data.get('top_bot')
-        bottom_bot_id = data.get('bottom_bot')
+        # Get player selections from the frontend.
+        # Assumes frontend sends 'top_player_id' and 'bottom_player_id'
+        # where the value is 'human' or a bot ID string.
+        top_player_id = data.get('top_player_id', 'human')
+        bottom_player_id = data.get('bottom_player_id')
+
+        top_player_type = 'human' if top_player_id == 'human' else 'bot'
+        bottom_player_type = 'human' if bottom_player_id == 'human' else 'bot'
+
+        top_executor = _get_bot_executor(top_player_id) if top_player_type == 'bot' else None
+        bottom_executor = _get_bot_executor(bottom_player_id) if bottom_player_type == 'bot' else None
         
-        # In Tank, Top is always Human for now, Bottom can be a Bot
         game.configure_players(
-            top_player_type='human',
-            bottom_player_type='bot', # Assuming bottom is always a bot for now
-            top_executor=None,
-            bottom_executor=_get_bot_executor(bottom_bot_id)
+            top_player_type=top_player_type,
+            bottom_player_type=bottom_player_type,
+            top_executor=top_executor,
+            bottom_executor=bottom_executor
         )
 
         # Send a specific "game_started" event

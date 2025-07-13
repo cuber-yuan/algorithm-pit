@@ -540,6 +540,12 @@ class TankBotInterface:
                 })
         
         return {
+            # Add the compressed map data for initial drawing, same as for bots
+            'brick_binary': self.brick_binary,
+            'water_binary': self.water_binary,
+            'steel_binary': self.steel_binary,
+
+            # Keep the existing state info
             'field': self.field.game_field,
             'tanks': tanks,
             'bases': {
