@@ -101,6 +101,24 @@ def tank():
 
     return render_template('tank.html', bots=bots)
 
+@main_bp.route('/snake')
+# @login_required
+def snake():
+    conn = pymysql.connect(
+        host=os.getenv('DB_HOST'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASSWORD'),
+        database=os.getenv('DB_NAME'),
+        charset='utf8mb4'
+    )
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, bot_name FROM bots where game = 'Snake'")
+    bots = cursor.fetchall()
+    conn.close()
+
+    return render_template('snake.html', bots=bots)
+
+
 @main_bp.route('/catking')
 def catking():
     return render_template('catking.html')

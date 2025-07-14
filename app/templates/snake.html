@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Snake{% endblock %}
+
+{% block sidebar_left %}
+<aside class="sider-left">
+  <div style="padding: 2rem;">
+    <h2 style="font-size: 1.25rem; font-weight: bold;">Left Player</h2>
+    <select id="aiSelectLeft" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+      {% for bot in bots %}
+      <option value="{{ bot[0] }}">{{ bot[1] }}</option>
+      {% endfor %}
+    </select>
+    <div style="margin-top:1.5rem;">
+      <input type="checkbox" id="top-is-human" disabled />
+      <label for="top-is-human" style="margin-left:0.5rem;">Human (disabled)</label>
+    </div>
+  </div>
+</aside>
+{% endblock %}
+
+{% block sidebar_right %}
+<aside class="sider-right">
+  <div style="padding: 2rem;">
+    <h2 style="font-size: 1.25rem; font-weight: bold;">Right Player</h2>
+    <select id="aiSelectRight" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+      {% for bot in bots %}
+      <option value="{{ bot[0] }}">{{ bot[1] }}</option>
+      {% endfor %}
+    </select>
+    <div style="margin-top:1.5rem;">
+      <input type="checkbox" id="bottom-is-human" disabled />
+      <label for="bottom-is-human" style="margin-left:0.5rem;">Human (disabled)</label>
+    </div>
+  </div>
+</aside>
+{% endblock %}
+
+{% block content %}
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+
+
+<style>
+  canvas {
+    background: #c2d1a2; 
+    margin-top: 20px;
+    border: 2px solid #333;
+  }
+
+  /* --- Responsive Layout Control (from Gomoku) --- */
+  @media (max-width: 1200px) {
+    /* Target the main layout container from base.html */
+    .layout-main {
+      flex-direction: column; /* Stack items vertically */
+      align-items: center;   /* Center them horizontally */
+    }
+
+    /* Move the game board to the top */
+    .main-content {
+      order: -1; 
+    }
+
+    /* Restyle the sidebars for their new position */
+    .sider-left, .sider-right {
+      position: static;
+      width: 100%;
+      max-width: 500px;
+      margin-top: 1rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .sider-right {
+        margin-top: 1rem;
+    }
+  }
+</style>
+
+<div class="bg-gray-100 py-10">
+  <div class="max-w-screen-xl mx-auto">
+    <!-- Game Canvas Section -->
+    <div style="position:relative;width:100%;max-width:600px;height:auto;margin:auto;box-sizing:border-box;">
+      <div id="phaser-container" style="width:100%;height:100%;"></div>
+    </div>
+    <br>
+    <div style="text-align:center;">
+        <p id="turnCounter" class="mt-4 text-lg font-semibold">Turn: 1</p>
+        <button id="newGameBtn" type="button" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New Game</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Game Configuration & State ---
+let userId = null;
+let currentGameId = null;
+let gameOver = false;
+const socket = io('/snake');
+
+function getCanvasSize() {
+  const padding = window.innerWidth < 600 ? 24 : 70;
+  return Math.min(window.innerWidth - padding, 600); // Simplified calculation
+}
+
+let CANVAS_SIZE = getCanvasSize();
+let phaserGame; // Will be initialized in the Phaser config
+
+// --- UI Mask Functions (from Gomoku) ---
+let maskRect = null;
+let maskText = null;
+
+function showPhaserMask(msg = "Waiting for new game...") {
+  // --- 修改开始: 使用 Phaser 的官方方法获取场景 ---
+  const scene = phaserGame.scene.getScene('SnakeScene');
+  if (!scene) return;
+  // --- 修改结束 ---
+  hidePhaserMask();
+  maskRect = scene.add.rectangle(CANVAS_SIZE / 2, CANVAS_SIZE / 2, CANVAS_SIZE, CANVAS_SIZE, 0x000000, 0.35).setDepth(1000);
+  maskText = scene.add.text(CANVAS_SIZE / 2, CANVAS_SIZE / 2, msg, { fontSize: Math.floor(CANVAS_SIZE / 18) + 'px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(1001);
+}
+
+function hidePhaserMask() {
+  if (maskRect) { maskRect.destroy(); maskRect = null; }
+  if (maskText) { maskText.destroy(); maskText = null; }
+}
+
+// --- Game Logic & Server Communication ---
+socket.on('init', (data) => { userId = data.user_id; });
+
+socket.on('game_started', (data) => {
+    // --- DEBUG ---
+    console.log("--- [EVENT] game_started ---");
+    console.log("Received state object:", data.state);
+    // --- END DEBUG ---
+
+    currentGameId = data.game_id;
+    gameOver = false;
+
+    // --- 修改开始: 使用 Phaser 的官方方法获取场景 ---
+    const scene = phaserGame.scene.getScene('SnakeScene');
+    if (scene && typeof scene.updateFromState === 'function') {
+        console.log("Calling scene.updateFromState...");
+        // console.log(data.state.initdata);
+        scene.updateFromState(data.state);
+    } else {
+        console.error("SnakeScene or its updateFromState method is not available!");
+    }
+    // --- 修改结束 ---
+
+    // hidePhaserMask(); // --- Temporarily disabled
+});
+
+socket.on('update', (data) => {
+    if (!currentGameId || data.game_id !== currentGameId) {
+        console.log(`Ignoring update for irrelevant game: ${data.game_id}`);
+        return;
+    }
+    // --- 修改开始: 使用 Phaser 的官方方法获取场景 ---
+    const scene = phaserGame.scene.getScene('SnakeScene');
+    if (scene && typeof scene.updateFromState === 'function') {
+        scene.updateFromState(data.state);
+    }
+    // --- 修改结束 ---
+    
+    if (data.winner) {
+        let msg = data.winner === 'draw' ? 'Draw!' : `${data.winner.charAt(0).toUpperCase() + data.winner.slice(1)} player wins!`;
+        // showPhaserMask(msg); // --- Temporarily disabled
+        gameOver = true;
+    }
+});
+
+function newGame() {
+  if (!userId) {
+    alert("Not connected to server yet.");
+    return;
+  }
+  // showPhaserMask("Starting new game..."); // --- Temporarily disabled
+
+  // const topIsHuman = document.getElementById('top-is-human').checked;
+  // const bottomIsHuman = document.getElementById('bottom-is-human').checked;
+
+  const topPlayerId = document.getElementById('aiSelectTop').value;
+  const bottomPlayerId = document.getElementById('aiSelectBottom').value;
+
+  socket.emit('new_game', {
+    user_id: userId,
+    top_player_id: topPlayerId,
+    bottom_player_id: bottomPlayerId
+  });
+}
+
+// --- Event Listeners & Phaser Initialization ---
+window.addEventListener('resize', () => {
+  CANVAS_SIZE = getCanvasSize();
+  if (phaserGame) {
+    phaserGame.scale.resize(CANVAS_SIZE, CANVAS_SIZE);
+    // if (maskRect || maskText) { // --- Temporarily disabled
+    //   let msg = maskText ? maskText.text : "Waiting for new game...";
+    //   showPhaserMask(msg);
+    // }
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Attach event listener for the new game button
+    document.getElementById('newGameBtn').addEventListener('click', newGame);
+
+    // Logic for human checkboxes (Temporarily disabled)
+    /*
+    const topCheckbox = document.getElementById('top-is-human');
+    const topSelect = document.getElementById('aiSelectTop');
+    topCheckbox.addEventListener('change', () => {
+        topSelect.disabled = topCheckbox.checked;
+        topSelect.classList.toggle('bg-gray-200', topCheckbox.checked);
+        topSelect.classList.toggle('cursor-not-allowed', topCheckbox.checked);
+    });
+
+    const bottomCheckbox = document.getElementById('bottom-is-human');
+    const bottomSelect = document.getElementById('aiSelectBottom');
+    bottomCheckbox.addEventListener('change', () => {
+        bottomSelect.disabled = bottomCheckbox.checked;
+        bottomSelect.classList.toggle('bg-gray-200', bottomCheckbox.checked);
+        bottomSelect.classList.toggle('cursor-not-allowed', bottomCheckbox.checked);
+    });
+    */
+
+    // --- PHASER INITIALIZATION ---
+    const config = {
+        type: Phaser.AUTO,
+        width: CANVAS_SIZE,
+        height: CANVAS_SIZE,
+        parent: 'phaser-container',
+        
+        scene: [SnakeScene]
+    };
+    phaserGame = new Phaser.Game(config);
+
+    // Wait a brief moment for the scene to be ready, then show the initial mask.
+    // setTimeout(() => { // --- Temporarily disabled
+    //     if (window.showPhaserMask) {
+    //         showPhaserMask("Select players and start a new game.");
+    //     }
+    // }, 100);
+});
+</script>
+{% endblock %}

@@ -10,7 +10,7 @@ import pymysql
 import time
 
 
-tank_bp = Blueprint('tank', __name__)
+snake_bp = Blueprint('snake', __name__)
 sessions = {}  # { user_id: { 'sid': ..., 'game': ... } }
 
 def _get_db_connection():
@@ -38,7 +38,7 @@ def _get_bot_executor(bot_id):
             conn.close()
     return None
 
-class TankGameSession:
+class snakeGameSession:
     def __init__(self, cpp_path, bot_top_code=None, bot_bottom_code=None):
         self.game_id = str(uuid4())
         self.cpp_judge = CppJudgeExecutor(cpp_path)
@@ -103,21 +103,21 @@ class TankGameSession:
         if self.bot_bottom: self.bot_bottom.cleanup()
 
 # --- SocketIO事件注册 ---
-def register_tank_events(socketio):
-    @socketio.on('connect', namespace='/tank2')
+def register_snake_events(socketio):
+    @socketio.on('connect', namespace='/snake')
     def handle_connect():
         user_id = str(uuid4())
         sessions[user_id] = {'sid': request.sid}
         join_room(request.sid)
         emit('init', {'user_id': user_id})
 
-    @socketio.on('new_game', namespace='/tank2')
+    @socketio.on('new_game', namespace='/snake')
     def new_game(data):
         user_id = data['user_id']
         bot_top_code = data.get('bot_top_code')
         bot_bottom_code = data.get('bot_bottom_code')
-        cpp_path = os.path.join(os.path.dirname(__file__), 'tank_judge.exe')
-        game = TankGameSession(cpp_path, bot_top_code, bot_bottom_code)
+        cpp_path = os.path.join(os.path.dirname(__file__), 'snake_judge.exe')
+        game = SnakeGameSession(cpp_path, bot_top_code, bot_bottom_code)
         sessions[user_id] = {'sid': request.sid, 'game': game}
 
         # Get player selections from the frontend.
@@ -149,15 +149,15 @@ def register_tank_events(socketio):
 
         for turn in range(maxTurn):
             # time.sleep(1)
-            # print('this send to frontend', game_state_dict['display'])
+            print('this send to frontend', game_state_dict['display'])
 
             top_input_str = json.dumps(top_input_dict)
             bot_input_str = json.dumps(bot_input_dict)
-            # print(f"========== Turn {turn + 1} Input ==========\n {top_input_str}\n {bot_input_str}")
+            print(f"========== Turn {turn + 1} Input ==========\n {top_input_str}\n {bot_input_str}")
 
             top_output = top_executor.run(top_input_str)
             bot_output = bot_executor.run(bot_input_str)
-            # print(f"========== Turn {turn + 1} Output ==========\n {top_output}\n {bot_output}")
+            print(f"========== Turn {turn + 1} Output ==========\n {top_output}\n {bot_output}")
             
             # 构造裁判输入
             judge_input_dict['log'].append({}) # 奇数个元素留空
@@ -166,9 +166,11 @@ def register_tank_events(socketio):
 
             response = {
                 'state': game_state_dict['display'],
+                # 'winner': winner,
                 'game_id': game.game_id
             }
             emit('update', response, room=sid)
+            # emit('update', game_state_dict['display'], room=sid)
 
             if game_state_dict['command'] == 'finish':
                 print("Game finished by judge.")
@@ -181,7 +183,7 @@ def register_tank_events(socketio):
             
             
 
-    @socketio.on('player_move', namespace='/tank2')
+    @socketio.on('player_move', namespace='/snake')
     def handle_player_move(data):
         user_id = data.get('user_id')
         judge_input_json = data.get('judge_input_json')  # 前端传来的完整json
@@ -191,7 +193,7 @@ def register_tank_events(socketio):
         judge_output = game.run_turn(judge_input_json)
         emit('update', judge_output, room=sessions[user_id]['sid'])
 
-    @socketio.on('disconnect', namespace='/tank2')
+    @socketio.on('disconnect', namespace='/snake')
     def handle_disconnect():
         user_id_to_del = None
         for user_id, session_data in sessions.items():
