@@ -1,22 +1,18 @@
 from flask import Blueprint, request
 from . import socketio
-from .tank2_judge import TankBotInterface # Assuming this is your game logic class
+from .cpp_judge_executor import CppJudgeExecutor
 from .code_executor import CodeExecutor
-from uuid import uuid4
-import uuid
-import json
 from flask_socketio import emit, join_room
-import pymysql
-from dotenv import load_dotenv
+from uuid import uuid4
 import os
+import json
+import pymysql
+import time
 
-load_dotenv()
 
 tank_bp = Blueprint('tank', __name__)
+sessions = {}  # { user_id: { 'sid': ..., 'game': ... } }
 
-sessions = {} # { user_id: { 'sid': '...', game_id: game_obj, ... } }
-
-# --- Helper Functions (from Gomoku) ---
 def _get_db_connection():
     return pymysql.connect(
         host=os.getenv('DB_HOST'),
@@ -42,63 +38,71 @@ def _get_bot_executor(bot_id):
             conn.close()
     return None
 
-# --- Core Game Loop for Simultaneous Moves ---
-def _process_turn_if_ready(game, sid):
-    """
-    Checks if all moves for the current turn are collected. 
-    If so, processes the turn and starts the next one.
-    """
-    if game.is_terminated or game.winner or not game.are_all_moves_collected():
-        return
-
-    # 1. All moves are in, process the turn
-    game.process_turn() # This method resolves all collected moves
-
-    # 2. Check for a winner after processing
-    winner = game.check_winner() # This method should now return the winner if any
-
-    # 3. Send the result of the turn to the client
-    response = {
-        'state': game.get_state(),
-        'winner': winner,
-        'game_id': game.game_id
-    }
-    emit('update', response, room=sid)
-
-    # 4. If the game is not over, start the next turn
-    if not winner and not game.is_terminated:
-        socketio.sleep(1.0) # Pause for 1 second between turns for better UX
-        _start_new_turn(game, sid)
-
-def _start_new_turn(game, sid):
-    """
-    Starts a new turn by clearing old moves and running any bots.
-    """
-    if game.is_terminated or game.winner:
-        return
-    
-    game.start_new_turn() # This method should prepare the game for the next set of moves
-
-    # Automatically run bots
-    if game.top_player_type == 'bot':
-        input_str = game.get_bot_input('top')
-        print(f"Running bot for top player with input: {input_str}")
+class TankGameSession:
+    def __init__(self, cpp_path, bot_top_code=None, bot_bottom_code=None):
+        self.game_id = str(uuid4())
+        self.cpp_judge = CppJudgeExecutor(cpp_path)
+        self.bot_top = CodeExecutor(code=bot_top_code) if bot_top_code else None
+        self.bot_bottom = CodeExecutor(code=bot_bottom_code) if bot_bottom_code else None
+        self.bot_top_type = 'bot' if bot_top_code else 'human'
+        self.bot_bottom_type = 'bot' if bot_bottom_code else 'human'
         
-        output = game.top_executor.run(input_str)
-        game.collect_move('top', json.loads(output))
 
-    if game.bottom_player_type == 'bot':
-        input_str = game.get_bot_input('bottom')
-        print(f"Running bot for bottom player with input: {input_str}")
+    def run_turn(self, judge_input_json):
+        """
+        judge_input_json: dict, 包含完整历史和地图信息，由前端维护和传递
+        1. 若有bot，则为bot生成输入，运行bot，获得动作，填入judge_input_json
+        2. 调用cpp裁判，返回裁判输出
+        """
+        # 1. 运行bot（如果有），生成双方动作
+        # 假设 judge_input_json["requests"] 和 "responses" 都是完整历史
+        # 只需为当前回合的bot补全动作即可
+        # 这里假设前端会把需要bot决策的回合留空或传None
+        # 你可以根据实际前端协议调整
+        if self.bot_top:
+            bot_input = self._make_bot_input(judge_input_json, side='top')
+            bot_output = self.bot_top.run(bot_input)
+            action = json.loads(bot_output)["response"]
+            # 补全responses最后一项
+            if len(judge_input_json["responses"]) < len(judge_input_json["requests"]) - 1:
+                judge_input_json["responses"].append(action)
+            else:
+                judge_input_json["responses"][-1] = action
+        if self.bot_bottom:
+            bot_input = self._make_bot_input(judge_input_json, side='bottom')
+            bot_output = self.bot_bottom.run(bot_input)
+            action = json.loads(bot_output)["response"]
+            # 补全requests最后一项
+            if len(judge_input_json["requests"]) < len(judge_input_json["responses"]) + 1:
+                judge_input_json["requests"].append(action)
+            else:
+                judge_input_json["requests"][-1] = action
 
-        output = game.bottom_executor.run(input_str)
-        game.collect_move('bottom', json.loads(output))
-    
-    # After running bots, check if the turn is ready to be processed
-    # (This handles the bot vs. bot case automatically)
-    _process_turn_if_ready(game, sid)
+        # 2. 调用cpp裁判
+        judge_output = self.cpp_judge.run_raw_json(judge_input_json)
+        return judge_output
 
-# --- SocketIO Event Handlers ---
+    def _make_bot_input(self, judge_input_json, side):
+        # 生成bot输入格式，兼容bot协议
+        # side: 'top' or 'bottom'
+        side_idx = 0 if side == 'top' else 1
+        opponent = 'bottom' if side == 'top' else 'top'
+        # 取地图
+        map_obj = judge_input_json["requests"][0].copy()
+        map_obj["mySide"] = side_idx
+        # 取历史
+        my_history = judge_input_json["responses"]
+        opponent_history = judge_input_json["requests"][1:]
+        return json.dumps({
+            "requests": [map_obj] + opponent_history,
+            "responses": my_history
+        })
+
+    def terminate(self):
+        if self.bot_top: self.bot_top.cleanup()
+        if self.bot_bottom: self.bot_bottom.cleanup()
+
+# --- SocketIO事件注册 ---
 def register_tank_events(socketio):
     @socketio.on('connect', namespace='/tank2')
     def handle_connect():
@@ -106,85 +110,97 @@ def register_tank_events(socketio):
         sessions[user_id] = {'sid': request.sid}
         join_room(request.sid)
         emit('init', {'user_id': user_id})
-        print(f'New tank user connected: {user_id}')
 
     @socketio.on('new_game', namespace='/tank2')
     def new_game(data):
         user_id = data['user_id']
-        user_session = sessions.get(user_id)
-        if not user_session: return
-
-        # Terminate any old games for this user
-        for key, value in user_session.items():
-            if isinstance(value, TankBotInterface):
-                value.terminate()
-
-        # Create and configure the new game instance
-        game = TankBotInterface() # Or your main game class
-        game.game_id = str(uuid.uuid4())
-        
-        game.field.debug_print();
-
-        sid = user_session['sid']
-        sessions[user_id] = {'sid': sid, game.game_id: game}
+        bot_top_code = data.get('bot_top_code')
+        bot_bottom_code = data.get('bot_bottom_code')
+        cpp_path = os.path.join(os.path.dirname(__file__), 'tank_judge.exe')
+        game = TankGameSession(cpp_path, bot_top_code, bot_bottom_code)
+        sessions[user_id] = {'sid': request.sid, 'game': game}
 
         # Get player selections from the frontend.
         # Assumes frontend sends 'top_player_id' and 'bottom_player_id'
         # where the value is 'human' or a bot ID string.
-        top_player_id = data.get('top_player_id', 'human')
+        top_player_id = data.get('top_player_id')
         bottom_player_id = data.get('bottom_player_id')
 
         top_player_type = 'human' if top_player_id == 'human' else 'bot'
         bottom_player_type = 'human' if bottom_player_id == 'human' else 'bot'
 
         top_executor = _get_bot_executor(top_player_id) if top_player_type == 'bot' else None
-        bottom_executor = _get_bot_executor(bottom_player_id) if bottom_player_type == 'bot' else None
-        
-        game.configure_players(
-            top_player_type=top_player_type,
-            bottom_player_type=bottom_player_type,
-            top_executor=top_executor,
-            bottom_executor=bottom_executor
-        )
+        bot_executor = _get_bot_executor(bottom_player_id) if bottom_player_type == 'bot' else None
 
-        # Send a specific "game_started" event
+        game_state_dict = game.cpp_judge.run_raw_json({});
+        print(game_state_dict);
+        maxTurn = game_state_dict['initdata']['maxTurn']
+        judge_input_dict = {'log':[], 'initdata': game_state_dict['initdata']}
+
+        top_input_dict = { "requests": [game_state_dict['content']['0']], "responses": [] }
+        bot_input_dict = { "requests": [game_state_dict['content']['1']], "responses": [] }
+
+        user_session = sessions.get(user_id)
+        sid = user_session['sid']
         emit('game_started', {
-            'state': game.get_state(),
+            'state': game_state_dict['display'],
             'game_id': game.game_id
         }, room=sid)
 
-        # Start the first turn
-        _start_new_turn(game, sid)
+        for turn in range(maxTurn):
+            time.sleep(1)
+            print('this send to frontend', game_state_dict['display'])
+
+            top_input_str = json.dumps(top_input_dict)
+            bot_input_str = json.dumps(bot_input_dict)
+            print(f"========== Turn {turn + 1} Input ==========\n {top_input_str}\n {bot_input_str}")
+
+            top_output = top_executor.run(top_input_str)
+            bot_output = bot_executor.run(bot_input_str)
+            print(f"========== Turn {turn + 1} Output ==========\n {top_output}\n {bot_output}")
+            
+            # 构造裁判输入
+            judge_input_dict['log'].append({}) # 奇数个元素留空
+            judge_input_dict['log'].append({"0": json.loads(top_output), "1": json.loads(bot_output)})
+            game_state_dict = game.cpp_judge.run_raw_json(judge_input_dict)
+
+            response = {
+                'state': game_state_dict['display'],
+                # 'winner': winner,
+                'game_id': game.game_id
+            }
+            emit('update', response, room=sid)
+            # emit('update', game_state_dict['display'], room=sid)
+
+            if game_state_dict['command'] == 'finish':
+                print("Game finished by judge.")
+                break
+            top_input_dict['requests'].append(json.loads(bot_output)['response'])
+            top_input_dict['responses'].append(json.loads(top_output)['response'])
+            bot_input_dict['requests'].append(json.loads(top_output)['response'])
+            bot_input_dict['responses'].append(json.loads(bot_output)['response'])
+
+            
+            
 
     @socketio.on('player_move', namespace='/tank2')
     def handle_player_move(data):
         user_id = data.get('user_id')
-        game_id = data.get('game_id')
-        move = data.get('move')
-        user_session = sessions.get(user_id)
-
-        if not user_id or not game_id or not user_session: return
-        
-        game = user_session.get(game_id)
-        if not game or game.is_terminated or game.winner: return
-
-        # Collect the human player's move (assuming human is always 'top' player)
-        game.collect_move('top', move)
-
-        # Check if the turn is now ready to be processed
-        _process_turn_if_ready(game, user_session['sid'])
+        judge_input_json = data.get('judge_input_json')  # 前端传来的完整json
+        if not user_id or not judge_input_json: return
+        game = sessions.get(user_id, {}).get('game')
+        if not game: return
+        judge_output = game.run_turn(judge_input_json)
+        emit('update', judge_output, room=sessions[user_id]['sid'])
 
     @socketio.on('disconnect', namespace='/tank2')
     def handle_disconnect():
         user_id_to_del = None
         for user_id, session_data in sessions.items():
             if session_data.get('sid') == request.sid:
-                for key, value in list(session_data.items()):
-                    if isinstance(value, TankBotInterface):
-                        value.terminate()
+                game = session_data.get('game')
+                if game: game.terminate()
                 user_id_to_del = user_id
                 break
-        
         if user_id_to_del:
             del sessions[user_id_to_del]
-            print(f'User {user_id_to_del} disconnected and all tank sessions cleaned up')

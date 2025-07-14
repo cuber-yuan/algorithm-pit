@@ -12,8 +12,8 @@
       {% endfor %}
     </select>
     <div style="margin-top:1.5rem;">
-      <input type="checkbox" id="top-is-human" />
-      <label for="top-is-human" style="margin-left:0.5rem;">Human</label>
+      <input type="checkbox" id="top-is-human" disabled />
+      <label for="top-is-human" style="margin-left:0.5rem;">Human (disabled)</label>
     </div>
   </div>
 </aside>
@@ -29,8 +29,8 @@
       {% endfor %}
     </select>
     <div style="margin-top:1.5rem;">
-      <input type="checkbox" id="bottom-is-human" />
-      <label for="bottom-is-human" style="margin-left:0.5rem;">Human</label>
+      <input type="checkbox" id="bottom-is-human" disabled />
+      <label for="bottom-is-human" style="margin-left:0.5rem;">Human (disabled)</label>
     </div>
   </div>
 </aside>
@@ -142,6 +142,7 @@ socket.on('game_started', (data) => {
     const scene = phaserGame.scene.getScene('TankScene');
     if (scene && typeof scene.updateFromState === 'function') {
         console.log("Calling scene.updateFromState...");
+        // console.log(data.state.initdata);
         scene.updateFromState(data.state);
     } else {
         console.error("TankScene or its updateFromState method is not available!");
@@ -177,11 +178,11 @@ function newGame() {
   }
   // showPhaserMask("Starting new game..."); // --- Temporarily disabled
 
-  const topIsHuman = document.getElementById('top-is-human').checked;
-  const bottomIsHuman = document.getElementById('bottom-is-human').checked;
+  // const topIsHuman = document.getElementById('top-is-human').checked;
+  // const bottomIsHuman = document.getElementById('bottom-is-human').checked;
 
-  const topPlayerId = topIsHuman ? 'human' : document.getElementById('aiSelectTop').value;
-  const bottomPlayerId = bottomIsHuman ? 'human' : document.getElementById('aiSelectBottom').value;
+  const topPlayerId = document.getElementById('aiSelectTop').value;
+  const bottomPlayerId = document.getElementById('aiSelectBottom').value;
 
   socket.emit('new_game', {
     user_id: userId,
@@ -206,7 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Attach event listener for the new game button
     document.getElementById('newGameBtn').addEventListener('click', newGame);
 
-    // Logic for human checkboxes
+    // Logic for human checkboxes (Temporarily disabled)
+    /*
     const topCheckbox = document.getElementById('top-is-human');
     const topSelect = document.getElementById('aiSelectTop');
     topCheckbox.addEventListener('change', () => {
@@ -222,14 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
         bottomSelect.classList.toggle('bg-gray-200', bottomCheckbox.checked);
         bottomSelect.classList.toggle('cursor-not-allowed', bottomCheckbox.checked);
     });
-
-    // Initial state setup
-    // topCheckbox.checked = true; // Default top player to human
-    // topSelect.disabled = topCheckbox.checked;
-    // topSelect.classList.toggle('bg-gray-200', topCheckbox.checked);
-    // topSelect.classList.toggle('cursor-not-allowed', topCheckbox.checked);
-    
-    // bottomSelect.disabled = bottomCheckbox.checked;
+    */
 
     // --- PHASER INITIALIZATION ---
     const config = {

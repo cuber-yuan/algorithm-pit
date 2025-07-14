@@ -11,6 +11,7 @@
 #include <ctime>
 #include <cstring>
 #include <queue>
+#define _BOTZONE_ONLINE
 #ifdef _BOTZONE_ONLINE
 #include "jsoncpp/json.h"
 #else
@@ -679,9 +680,9 @@ namespace TankGame
                 size_t i, n = requests.size();
                 for (i = 0; i < n; i++)
                 {
-                    Internals::_processRequestOrResponse(requests[i], true);
+                    Internals::_processRequestOrResponse(requests[static_cast<unsigned int>(i)], true);
                     if (i < n - 1)
-                        Internals::_processRequestOrResponse(responses[i], false);
+                        Internals::_processRequestOrResponse(responses[static_cast<unsigned int>(i)], false);
                 }
                 outData = input["data"].asString();
                 outGlobalData = input["globaldata"].asString();

@@ -5,13 +5,13 @@ import os
 import sys
 
 class CodeExecutor:
-    def __init__(self, code: str, language: str = 'python'):
+    def __init__(self, code: str, language: str = 'python3'):
         self.code = code
         self.language = language.lower()
         self.exec_file = None  # For C++
     
     def run(self, input_str: str) -> str:
-        if self.language == 'python':
+        if self.language == 'python3':
             # 将 self.code 作为参数直接传递
             return self._run_python(self.code, input_str)
         elif self.language == 'cpp':
