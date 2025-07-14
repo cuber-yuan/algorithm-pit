@@ -39,7 +39,7 @@
 {% block content %}
 <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
-
+<script src="{{ url_for('static', filename='snake/snake.js') }}"></script>
 
 <style>
   canvas {
@@ -180,13 +180,13 @@ function newGame() {
   // const topIsHuman = document.getElementById('top-is-human').checked;
   // const bottomIsHuman = document.getElementById('bottom-is-human').checked;
 
-  const topPlayerId = document.getElementById('aiSelectTop').value;
-  const bottomPlayerId = document.getElementById('aiSelectBottom').value;
+  const leftPlayerId = document.getElementById('aiSelectLeft').value;
+  const rightPlayerId = document.getElementById('aiSelectRight').value;
 
   socket.emit('new_game', {
     user_id: userId,
-    top_player_id: topPlayerId,
-    bottom_player_id: bottomPlayerId
+    left_player_id: leftPlayerId,
+    right_player_id: rightPlayerId
   });
 }
 
@@ -236,12 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     phaserGame = new Phaser.Game(config);
 
-    // Wait a brief moment for the scene to be ready, then show the initial mask.
-    // setTimeout(() => { // --- Temporarily disabled
-    //     if (window.showPhaserMask) {
-    //         showPhaserMask("Select players and start a new game.");
-    //     }
-    // }, 100);
+    
 });
 </script>
 {% endblock %}

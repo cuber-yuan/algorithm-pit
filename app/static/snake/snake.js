@@ -1,0 +1,200 @@
+// This script is loaded by tank.html after the Phaser game object is created.
+// The 'mainScene' variable is globally available and points to the main Phaser scene.
+
+const FIELD_WIDTH = 9, FIELD_HEIGHT = 9;
+const INIT_TANKS = [
+    { x: 2, y: 0, side: 0, alive: true }, // 蓝0
+    { x: 6, y: 0, side: 0, alive: true }, // 蓝1
+    { x: 6, y: 8, side: 1, alive: true }, // 红0
+    { x: 2, y: 8, side: 1, alive: true }, // 红1
+];
+const INIT_BASES = [
+    { x: 4, y: 0, side: 0, alive: true }, // 蓝基地
+    { x: 4, y: 8, side: 1, alive: true }, // 红基地
+];
+
+// --- Extend the main Phaser scene with our game logic ---
+
+class SnakeScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'SnakeScene' });
+        
+        // 游戏状态变量
+        this.fieldWidth = 0;
+        this.fieldHeight = 0;
+        this.snake1 = []; // 玩家1的蛇，格式: [{x, y, dir}]
+        this.snake2 = []; // 玩家2的蛇，格式: [{x, y, dir}]
+        this.obstacles = [];
+        
+        // 绘图相关
+        this.CELL_SIZE = 0;
+        this.obstacleLayer = null;
+        this.snake1Layer = null;
+        this.snake2Layer = null;
+        this.turn = 0; // 回合数从0开始，第1回合时变为1
+    }
+
+    preload() {
+        const assetPath = '/static/snake/assets/';
+        const colors = ['red', 'blue'];
+        
+        // 加载所有基础素材
+        colors.forEach(color => {
+            this.load.image(`head_${color}_nodir`, `${assetPath}head_${color}_nodir.png`);
+            this.load.image(`head_${color}_dir0`, `${assetPath}head_${color}_dir0.png`);
+            this.load.image(`body_${color}_dir0`, `${assetPath}body_${color}_dir0.png`);
+            this.load.image(`body_${color}_dir01`, `${assetPath}body_${color}_dir01.png`);
+        });
+    }
+
+    create() {
+        this.obstacleLayer = this.add.group();
+        this.snake1Layer = this.add.group();
+        this.snake2Layer = this.add.group();
+    }
+
+    updateFromState(state) {
+        if (!state) return;
+
+        if (state.width && state.height) {
+            this.drawInitialState(state);
+        } else {
+            this.applyActions(state);
+        }
+        
+        const turnCounter = document.getElementById('turnCounter');
+        if (turnCounter) {
+            turnCounter.textContent = `Turn: ${this.turn}`;
+        }
+    }
+
+    drawInitialState(state) {
+        this.fieldWidth = state.width;
+        this.fieldHeight = state.height;
+        this.obstacles = state.obstacle;
+        this.turn = 0; // 重置回合数
+
+        // 正确使用后端传来的初始坐标
+        this.snake1 = [{ x: state['0'].x, y: state['0'].y, dir: -1 }];
+        this.snake2 = [{ x: state['1'].x, y: state['1'].y, dir: -1 }];
+
+        const canvasWidth = this.game.config.width;
+        const canvasHeight = this.game.config.height;
+        const cellWidth = canvasWidth / this.fieldWidth;
+        const cellHeight = canvasHeight / this.fieldHeight;
+        this.CELL_SIZE = Math.min(cellWidth, cellHeight);
+
+        this.renderAll();
+    }
+
+    applyActions(actions) {
+        this.turn += 1; // 回合数增加
+
+        // 方向向量 (0:上, 1:右, 2:下, 3:左)
+        const directions = [
+            { x: -1, y: 0 }, // 0:北
+            { x: 0, y: 1 },  // 1:东
+            { x: 1, y: 0 },  // 2:南
+            { x: 0, y: -1 }  // 3:西
+        ];
+
+        // --- 更新蛇1 ---
+        const head1 = this.snake1[0];
+        const newHead1 = {
+            x: head1.x + directions[actions['0']].x,
+            y: head1.y + directions[actions['0']].y,
+            dir: actions['0']
+        };
+        this.snake1.unshift(newHead1);
+
+        // --- 更新蛇2 ---
+        const head2 = this.snake2[0];
+        const newHead2 = {
+            x: head2.x + directions[actions['1']].x,
+            y: head2.y + directions[actions['1']].y,
+            dir: actions['1']
+        };
+        this.snake2.unshift(newHead2);
+
+        // 【生长逻辑修正】根据回合数判断是否移除蛇尾
+        let shouldGrow = false;
+        if (this.turn <= 25) {
+            shouldGrow = true;
+        } else if ((this.turn - 25) % 3 === 1) { // 26, 29, 32...
+            shouldGrow = true;
+        }
+
+        if (!shouldGrow) {
+            this.snake1.pop();
+            this.snake2.pop();
+        }
+
+        this.renderAll();
+    }
+
+    renderAll() {
+        this.obstacleLayer.clear(true, true);
+        this.snake1Layer.clear(true, true);
+        this.snake2Layer.clear(true, true);
+
+        const graphics = this.add.graphics();
+        graphics.fillStyle(0x808080, 1);
+        this.obstacles.forEach(obs => {
+            // 渲染时将1-based坐标转换为0-based
+            graphics.fillRect((obs.x - 1) * this.CELL_SIZE, (obs.y - 1) * this.CELL_SIZE, this.CELL_SIZE, this.CELL_SIZE);
+        });
+        this.obstacleLayer.add(graphics);
+
+        // 渲染两条蛇
+        this.renderSnake(this.snake1, 'blue', this.snake1Layer);
+        this.renderSnake(this.snake2, 'red', this.snake2Layer);
+    }
+
+    renderSnake(snake, color, layer) {
+        const dirToAngle = [0, 90, 180, 270]; // 0:上, 1:右, 2:下, 3:左
+
+        for (let i = 0; i < snake.length; i++) {
+            const segment = snake[i];
+            const x = (segment.x - 1 + 0.5) * this.CELL_SIZE;
+            const y = (segment.y - 1 + 0.5) * this.CELL_SIZE;
+            let spriteKey = '';
+            let angle = 0;
+            let flipY = false;
+
+            if (i === 0) { // 蛇头
+                spriteKey = segment.dir === -1 ? `head_${color}_nodir` : `head_${color}_dir0`;
+                if (segment.dir !== -1) angle = dirToAngle[segment.dir];
+            } else { // 身体
+                const prevSegment = snake[i - 1];
+                if (prevSegment.dir === segment.dir) { // 直线
+                    spriteKey = `body_${color}_dir0`;
+                    angle = dirToAngle[segment.dir];
+                } else { // 转弯
+                    spriteKey = `body_${color}_dir01`;
+                    // 进入方向：当前节段的方向
+                    // 出去方向：上一节段的方向
+                    const inDir = segment.dir;
+                    const outDir = prevSegment.dir;
+                    // 顺时针（如0->1、1->2、2->3、3->0）：直接旋转
+                    if ((inDir + 1) % 4 === outDir) {
+                        angle = dirToAngle[inDir];
+                        flipY = false;
+                    } else { // 逆时针（如1->0、2->1、3->2、0->3）：旋转+Y翻转
+                        angle = dirToAngle[inDir];
+                        flipY = true;
+                    }
+                }
+            }
+
+            if (spriteKey) {
+                const sprite = this.add.sprite(x, y, spriteKey);
+                sprite.setDisplaySize(this.CELL_SIZE, this.CELL_SIZE);
+                sprite.setAngle(angle);
+                if (flipY) {
+                    sprite.setFlipY(true);
+                }
+                layer.add(sprite);
+            }
+        }
+    }
+}

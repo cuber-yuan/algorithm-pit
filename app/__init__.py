@@ -17,21 +17,24 @@ def create_app():
     
     from .gomoku import register_gomoku_events
     from .tank2 import register_tank_events
+    from .snake import register_snake_events
     register_gomoku_events(socketio)
     register_tank_events(socketio)
-
+    register_snake_events(socketio)
 
     from .main import main_bp
     from .auth import auth_bp
     from .upload import upload_bp
     from .gomoku import gomoku_bp
     from .tank2 import tank_bp
+    from .snake import snake_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(upload_bp)
     app.register_blueprint(gomoku_bp)
     app.register_blueprint(tank_bp)
+    app.register_blueprint(snake_bp)
 
     
     return app
