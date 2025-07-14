@@ -59,17 +59,17 @@ class CodeExecutor:
             with open(source_path, 'w', encoding='utf-8') as f:
                 f.write(code_to_run)
 
-            # 复制 jsoncpp.cpp 和 jsoncpp 文件夹到临时目录
+            # 直接用相对路径引用 app/jsoncpp.cpp 和 app/jsoncpp
             base_dir = os.path.dirname(os.path.abspath(__file__))
-            jsoncpp_cpp = os.path.join(base_dir, 'jsoncpp.cpp')
-            jsoncpp_dir = os.path.join(base_dir, 'jsoncpp')
-            shutil.copy(jsoncpp_cpp, os.path.join(tmpdir, 'jsoncpp.cpp'))
-            shutil.copytree(jsoncpp_dir, os.path.join(tmpdir, 'jsoncpp'))
 
-            # 编译
+            # 编译时直接引用 app 目录下的 jsoncpp.cpp 和 jsoncpp
             compile_result = subprocess.run(
-                ['g++', 'program.cpp', 'jsoncpp.cpp', '-Ijsoncpp', '-o', 'program'],
-                cwd=tmpdir,
+                [
+                    'g++', '-std=c++17',
+                    source_path,
+                    f'-I{base_dir}',
+                    '-o', binary_path
+                ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
@@ -79,7 +79,7 @@ class CodeExecutor:
 
             # 运行
             result = subprocess.run(
-                [os.path.join(tmpdir, 'program')],
+                [binary_path],
                 input=input_json.encode(),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
