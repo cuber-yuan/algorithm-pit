@@ -148,7 +148,7 @@ def register_tank_events(socketio):
         }, room=sid)
 
         for turn in range(maxTurn):
-            time.sleep(1)
+            # time.sleep(1)
             print('this send to frontend', game_state_dict['display'])
 
             top_input_str = json.dumps(top_input_dict)

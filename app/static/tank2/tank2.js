@@ -170,13 +170,13 @@ class TankScene extends Phaser.Scene {
             }
         }
 
-        // 3. 处理射击（严格模拟 Tank2 砖块规则）
-        let bulletHits = []; // {x, y, type, shooter, dir}
+        // 3. 处理射击（严格模拟 Tank2 规则）
+        let bulletHits = []; // {x, y, type, shooter, dir, target?}
         for (let i = 0; i < 4; i++) {
             const tank = tanks[i];
             if (!tank.alive) continue;
             const act = allActions[i];
-            if (act >= 4 && act <= 7) {
+            if (act >= 4 && act <= 7) { // 射击
                 const dir = act % 4;
                 let x = tank.x, y = tank.y;
                 while (true) {
@@ -186,19 +186,29 @@ class TankScene extends Phaser.Scene {
                         bulletHits.push({x, y, type: 'out', shooter: i, dir});
                         break;
                     }
-                    if (this.mapData[y][x] === 3) { // steel
+                    if (this.mapData[y][x] === 3) { // 钢
                         bulletHits.push({x, y, type: 'steel', shooter: i, dir});
                         break;
                     }
-                    if (this.mapData[y][x] === 2) { // brick
+                    if (this.mapData[y][x] === 2) { // 砖
                         bulletHits.push({x, y, type: 'brick', shooter: i, dir});
                         break;
                     }
-                    // 击中坦克
+                    // 检查是否击中坦克
                     let hitTank = false;
                     for (let j = 0; j < 4; j++) {
                         if (tanks[j].alive && tanks[j].x === x && tanks[j].y === y) {
-                            bulletHits.push({x, y, type: 'tank', shooter: i, dir, target: j});
+                            // 新增：对射判断
+                            const theirAction = allActions[j];
+                            const theirDir = theirAction % 4;
+                            // 如果对方也反向射击，则子弹抵消
+                            if (theirAction >= 4 && theirAction <= 7 && (dir + 2) % 4 === theirDir) {
+                                // 记录一个抵消事件，用于动画
+                                bulletHits.push({x, y, type: 'cancel', shooter: i, dir});
+                            } else {
+                                // 否则正常命中
+                                bulletHits.push({x, y, type: 'tank', shooter: i, dir, target: j});
+                            }
                             hitTank = true;
                             break;
                         }
@@ -245,6 +255,7 @@ class TankScene extends Phaser.Scene {
 
         // 处理坦克和基地被击毁
         bulletHits.forEach(hit => {
+            // 只有类型为 'tank' 的命中才会摧毁坦克
             if (hit.type === 'tank') {
                 tanks[hit.target].alive = false;
             }
@@ -327,6 +338,8 @@ class TankScene extends Phaser.Scene {
         const endX = (toX + 0.5) * this.CELL_SIZE;
         const endY = (toY + 0.5) * this.CELL_SIZE;
         const graphics = this.add.graphics();
+        // 设置一个较高的深度，确保子弹在所有地图元素之上
+        graphics.setDepth(10); 
         graphics.lineStyle(this.CELL_SIZE * 0.2, 0xffff00, 1); // 黄色子弹
 
         const duration = 200;
