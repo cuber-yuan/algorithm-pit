@@ -158,6 +158,7 @@ class TankScene extends Phaser.Scene {
         }
 
         // 2. 处理坦克互撞（同一格多于1辆坦克全部死亡）
+        /*
         for (let i = 0; i < 4; i++) {
             if (!tanks[i].alive) continue;
             for (let j = i + 1; j < 4; j++) {
@@ -168,6 +169,7 @@ class TankScene extends Phaser.Scene {
                 }
             }
         }
+        */
 
         // 3. 处理射击（严格模拟 Tank2 规则）
         let bulletHits = []; // {x, y, type, shooter, dir, target?}
