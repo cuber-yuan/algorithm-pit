@@ -3,6 +3,7 @@ import subprocess
 import tempfile
 import os
 import sys
+import shutil
 
 class CodeExecutor:
     def __init__(self, code: str, language: str = 'python3'):
@@ -54,13 +55,21 @@ class CodeExecutor:
             source_path = os.path.join(tmpdir, 'program.cpp')
             binary_path = os.path.join(tmpdir, 'program')
 
-            with open(source_path, 'w') as f:
-                # 使用传入的参数进行写入
+            # 写入主程序
+            with open(source_path, 'w', encoding='utf-8') as f:
                 f.write(code_to_run)
 
-            # Compile C++
+            # 复制 jsoncpp.cpp 和 jsoncpp 文件夹到临时目录
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            jsoncpp_cpp = os.path.join(base_dir, 'jsoncpp.cpp')
+            jsoncpp_dir = os.path.join(base_dir, 'jsoncpp')
+            shutil.copy(jsoncpp_cpp, os.path.join(tmpdir, 'jsoncpp.cpp'))
+            shutil.copytree(jsoncpp_dir, os.path.join(tmpdir, 'jsoncpp'))
+
+            # 编译
             compile_result = subprocess.run(
-                ['g++', source_path, '-o', binary_path],
+                ['g++', 'program.cpp', 'jsoncpp.cpp', '-Ijsoncpp', '-o', 'program'],
+                cwd=tmpdir,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
@@ -68,9 +77,9 @@ class CodeExecutor:
             if compile_result.returncode != 0:
                 raise RuntimeError(f"C++ compile error: {compile_result.stderr.decode()}")
 
-            # Run compiled program
+            # 运行
             result = subprocess.run(
-                [binary_path],
+                [os.path.join(tmpdir, 'program')],
                 input=input_json.encode(),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
