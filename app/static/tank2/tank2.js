@@ -89,13 +89,12 @@ class TankScene extends Phaser.Scene {
             this.tankLayer.clear(true, true);
             this.baseLayer.clear(true, true);
             this.renderTanksAndBases();
+            // 更新回合数显示
+            const turnCounter = document.getElementById('turnCounter');
+            if (turnCounter) {
+                turnCounter.textContent = `Turn: ${this.turn}`;
+            }
             return;
-        }
-
-        // 每回合更新回合数显示
-        const turnCounter = document.getElementById('turnCounter');
-        if (turnCounter) {
-            turnCounter.textContent = `Turn: ${this.turn}`;
         }
     }
 
