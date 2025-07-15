@@ -42,6 +42,7 @@ class SnakeScene extends Phaser.Scene {
         colors.forEach(color => {
             this.load.image(`head_${color}_nodir`, `${assetPath}head_${color}_nodir.png`);
             this.load.image(`head_${color}_dir0`, `${assetPath}head_${color}_dir0.png`);
+            this.load.image(`tail_${color}_dir0`, `${assetPath}tail_${color}_dir0.png`);
             this.load.image(`body_${color}_dir0`, `${assetPath}body_${color}_dir0.png`);
             this.load.image(`body_${color}_dir01`, `${assetPath}body_${color}_dir01.png`);
         });
@@ -75,8 +76,8 @@ class SnakeScene extends Phaser.Scene {
         this.turn = 0; // 重置回合数
 
         // 正确使用后端传来的初始坐标
-        this.snake1 = [{ x: state['0'].x, y: state['0'].y, dir: 2 }];
-        this.snake2 = [{ x: state['1'].x, y: state['1'].y, dir: 0 }];
+        this.snake1 = [{ x: state['0'].x, y: state['0'].y, dir: -1 }];
+        this.snake2 = [{ x: state['1'].x, y: state['1'].y, dir: -1 }];
 
         // 动态调整画布大小
         const container = document.getElementById('phaser-container');
@@ -141,7 +142,7 @@ class SnakeScene extends Phaser.Scene {
         let shouldGrow = false;
         if (this.turn <= 25) {
             shouldGrow = true;
-        } else if ((this.turn - 25) % 3 === 1) { // 26, 29, 32...
+        } else if ((this.turn - 25) % 3 === 0) { // 28, 31, 34...
             shouldGrow = true;
         }
 
@@ -185,7 +186,12 @@ class SnakeScene extends Phaser.Scene {
             if (i === 0) { // 蛇头
                 spriteKey = segment.dir === -1 ? `head_${color}_nodir` : `head_${color}_dir0`;
                 if (segment.dir !== -1) angle = dirToAngle[segment.dir];
-            } else {
+            } else if (i === snake.length - 1 && snake.length > 1) { // 蛇尾
+                // 蛇尾方向应与倒数第二节指向蛇尾的方向一致
+                const prevSegment = snake[i - 1];
+                spriteKey = `tail_${color}_dir0`;
+                angle = dirToAngle[prevSegment.dir];
+            }  else {
                 const prevSegment = snake[i - 1];
                 if (prevSegment.dir === segment.dir) { // 直线
                     spriteKey = `body_${color}_dir0`;
