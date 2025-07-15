@@ -120,10 +120,13 @@ def register_snake_events(socketio):
                 'state': game_state_dict['display'],
                 'game_id': game.game_id
             }
-            # print('this send to frontend', game_state_dict['display'])
+            # print(game_state_dict)
+            print('this send to frontend', game_state_dict['display'])
             emit('update', response, room=sid)
 
             if game_state_dict['command'] == 'finish':
+                print(game_state_dict)
+                emit('finish', {"message": game_state_dict['err'], 'game_id': game.game_id}, room=sid)
                 print("Game finished by judge.")
                 break
             input_dict_1['requests'].append(json.loads(output_2)['response'])

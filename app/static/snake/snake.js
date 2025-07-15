@@ -78,8 +78,28 @@ class SnakeScene extends Phaser.Scene {
         this.snake1 = [{ x: state['0'].x, y: state['0'].y, dir: 2 }];
         this.snake2 = [{ x: state['1'].x, y: state['1'].y, dir: 0 }];
 
-        const canvasWidth = this.game.config.width;
-        const canvasHeight = this.game.config.height;
+        // 动态调整画布大小
+        const container = document.getElementById('phaser-container');
+        // 你可以设置最大宽度或高度，比如最大600px
+        const maxCanvasWidth = 600;
+        const maxCanvasHeight = 600;
+        let canvasWidth = maxCanvasWidth;
+        let canvasHeight = maxCanvasHeight;
+        if (this.fieldWidth / this.fieldHeight > 1) {
+            // 宽比高大，宽为最大，按比例缩放高
+            canvasHeight = Math.round(maxCanvasWidth * this.fieldHeight / this.fieldWidth);
+        } else {
+            // 高比宽大，高为最大，按比例缩放宽
+            canvasWidth = Math.round(maxCanvasHeight * this.fieldWidth / this.fieldHeight);
+        }
+        // 设置容器尺寸
+        container.style.width = canvasWidth + 'px';
+        container.style.height = canvasHeight + 'px';
+
+        // Phaser 3 动态调整画布大小
+        this.game.scale.resize(canvasHeight, canvasWidth);
+
+        // 重新计算CELL_SIZE
         const cellWidth = canvasWidth / this.fieldWidth;
         const cellHeight = canvasHeight / this.fieldHeight;
         this.CELL_SIZE = Math.min(cellWidth, cellHeight);
