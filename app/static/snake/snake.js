@@ -43,14 +43,7 @@ class SnakeScene extends Phaser.Scene {
             this.load.image(`head_${color}_nodir`, `${assetPath}head_${color}_nodir.png`);
             this.load.image(`head_${color}_dir0`, `${assetPath}head_${color}_dir0.png`);
             this.load.image(`body_${color}_dir0`, `${assetPath}body_${color}_dir0.png`);
-            // 加载所有可能的转弯素材
-            // for (let a = 0; a < 4; a++) {
-            //     for (let b = 0; b < 4; b++) {
-            //         if (a !== b) {
-            //             this.load.image(`body_${color}_dir${a}${b}`, `${assetPath}body_${color}_dir${a}${b}.png`);
-            //         }
-            //     }
-            // }
+            this.load.image(`body_${color}_dir01`, `${assetPath}body_${color}_dir01.png`);
         });
     }
 
@@ -82,8 +75,8 @@ class SnakeScene extends Phaser.Scene {
         this.turn = 0; // 重置回合数
 
         // 正确使用后端传来的初始坐标
-        this.snake1 = [{ x: state['0'].x, y: state['0'].y, dir: -1 }];
-        this.snake2 = [{ x: state['1'].x, y: state['1'].y, dir: -1 }];
+        this.snake1 = [{ x: state['0'].x, y: state['0'].y, dir: 2 }];
+        this.snake2 = [{ x: state['1'].x, y: state['1'].y, dir: 0 }];
 
         const canvasWidth = this.game.config.width;
         const canvasHeight = this.game.config.height;
@@ -97,12 +90,12 @@ class SnakeScene extends Phaser.Scene {
     applyActions(actions) {
         this.turn += 1; // 回合数增加
 
-        // 方向向量 (0:上, 1:右, 2:下, 3:左)
+        // 方向向量 (0:左, 1:下, 2:右, 3:上)
         const directions = [
-            { x: -1, y: 0 }, // 0:北
-            { x: 0, y: 1 },  // 1:东
-            { x: 1, y: 0 },  // 2:南
-            { x: 0, y: -1 }  // 3:西
+            { x: -1, y: 0 }, // 0:左
+            { x: 0, y: 1 },  // 1:下
+            { x: 1, y: 0 },  // 2:右
+            { x: 0, y: -1 }  // 3:上
         ];
 
         // --- 更新蛇1 ---
@@ -122,6 +115,7 @@ class SnakeScene extends Phaser.Scene {
             dir: actions['1']
         };
         this.snake2.unshift(newHead2);
+
 
         // 【生长逻辑修正】根据回合数判断是否移除蛇尾
         let shouldGrow = false;
@@ -158,7 +152,7 @@ class SnakeScene extends Phaser.Scene {
     }
 
     renderSnake(snake, color, layer) {
-        const dirToAngle = [270, 180, 90, 0]; // 0:上, 1:右, 2:下, 3:左
+        const dirToAngle = [0, 270, 180, 90]; // (0:左, 1:下, 2:右, 3:上)
         const lineColor = color === 'red' ? 0xff0000 : 0x0000ff;
 
         for (let i = 0; i < snake.length; i++) {
@@ -173,50 +167,41 @@ class SnakeScene extends Phaser.Scene {
                 if (segment.dir !== -1) angle = dirToAngle[segment.dir];
             } else {
                 const prevSegment = snake[i - 1];
-                // if (prevSegment.dir === segment.dir) { // 直线
+                if (prevSegment.dir === segment.dir) { // 直线
                     spriteKey = `body_${color}_dir0`;
                     angle = dirToAngle[segment.dir];
-                // } else { // 转弯，代码绘制
-                //     // inDir: 当前节段的方向，outDir: 上一节段的方向
-                //     const inDir = (segment.dir+2)%4 ;
-                //     const outDir = prevSegment.dir;
+                } else { // 转弯
+                    // inDir: 当前节段的方向，outDir: 上一节段的方向
+                    const inDir = (segment.dir+2)%4;
+                    const outDir = prevSegment.dir;
+                    spriteKey = `body_${color}_dir01`;
 
-                //     // 计算格子中心
-                //     const cx = (segment.x - 1 + 0.5) * this.CELL_SIZE;
-                //     const cy = (segment.y - 1 + 0.5) * this.CELL_SIZE;
-                //     const half = this.CELL_SIZE / 2;
-                //     const quarter = this.CELL_SIZE / 4;
-                //     const g = this.add.graphics();
-                //     g.lineStyle(quarter, lineColor);
+                    let flipX = false;
+                    let flipY = false;
+                    if ((inDir + 1) % 4 === outDir) {
+                        // 顺时针：直接旋转到 inDir
+                        angle = dirToAngle[inDir];
+                        flipX = false;
+                    } else if ((inDir + 3) % 4 === outDir) {
+                        // 逆时针：旋转到 outDir，并 flipX
+                        angle = dirToAngle[outDir];
+                        if( outDir === 0 || outDir === 2) {
+                            flipX = true; // 水平翻转
+                        }else{
+                            flipY = true; // 垂直翻转
+                        }
+                        
 
-                //     // 计算尾巴方向（inDir）和头方向（outDir）对应的起点和终点
-                //     // 0:上, 1:右, 2:下, 3:左
-                //     const dirToVec = [
-                //         { dx: 0, dy: -half }, // 上
-                //         { dx: half, dy: 0 },  // 右
-                //         { dx: 0, dy: half },  // 下
-                //         { dx: -half, dy: 0 }  // 左
-                //     ];
+                    }
 
-                //     // 从尾巴方向进到中心
-                //     const tailVec = dirToVec[inDir];
-                //     const headVec = dirToVec[outDir];
-
-                //     // 画尾巴到中心
-                //     g.beginPath();
-                //     g.moveTo(cx + tailVec.dx, cy + tailVec.dy);
-                //     g.lineTo(cx, cy);
-                //     g.strokePath();
-
-                //     // 画中心到头方向
-                //     g.beginPath();
-                //     g.moveTo(cx, cy);
-                //     g.lineTo(cx + headVec.dx, cy + headVec.dy);
-                //     g.strokePath();
-
-                //     layer.add(g);
-                //     continue; // 跳过sprite绘制
-                // }
+                    const sprite = this.add.sprite(x, y, spriteKey);
+                    sprite.setDisplaySize(this.CELL_SIZE, this.CELL_SIZE);
+                    sprite.setAngle(angle);
+                    // if (flipX) sprite.setFlipX(true);
+                    // if (flipY) sprite.setFlipY(true);
+                    layer.add(sprite);
+                    continue; // 跳过后续spriteKey判断
+                }
             }
 
             if (spriteKey) {

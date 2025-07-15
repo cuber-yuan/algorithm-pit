@@ -82,7 +82,7 @@ def register_snake_events(socketio):
 
         game_state_dict = game.cpp_judge.run_raw_json({});
         # print(game_state_dict);
-        maxTurn = 100
+        maxTurn = 200
         judge_input_dict = {'log':[], 'initdata': game_state_dict['initdata']}
 
         input_dict_1 = { "requests": [game_state_dict['content']['0']], "responses": [] }
@@ -101,8 +101,8 @@ def register_snake_events(socketio):
                 print(f"User {user_id} disconnected, terminating game loop.")
                 break
 
-            # time.sleep(1)
-            # print('this send to frontend', game_state_dict['display'])
+            
+            
             input_str_1 = json.dumps(input_dict_1)
             input_str_2 = json.dumps(input_dict_2)
             # print(f"========== Turn {turn + 1} Input ==========\n {input_str_1}\n {input_str_2}")
@@ -120,6 +120,7 @@ def register_snake_events(socketio):
                 'state': game_state_dict['display'],
                 'game_id': game.game_id
             }
+            # print('this send to frontend', game_state_dict['display'])
             emit('update', response, room=sid)
 
             if game_state_dict['command'] == 'finish':
