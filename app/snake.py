@@ -81,7 +81,7 @@ def register_snake_events(socketio):
         executor_2 = _get_bot_executor(player_2_id) if player_2_type == 'bot' else None
 
         game_state_dict = game.cpp_judge.run_raw_json({});
-        print(game_state_dict);
+        # print(game_state_dict);
         maxTurn = 100
         judge_input_dict = {'log':[], 'initdata': game_state_dict['initdata']}
 
@@ -96,15 +96,20 @@ def register_snake_events(socketio):
         }, room=sid)
 
         for turn in range(maxTurn):
+            # 检查用户是否还在线
+            if user_id not in sessions or sessions[user_id]['sid'] != sid:
+                print(f"User {user_id} disconnected, terminating game loop.")
+                break
+
             # time.sleep(1)
-            print('this send to frontend', game_state_dict['display'])
+            # print('this send to frontend', game_state_dict['display'])
             input_str_1 = json.dumps(input_dict_1)
             input_str_2 = json.dumps(input_dict_2)
-            print(f"========== Turn {turn + 1} Input ==========\n {input_str_1}\n {input_str_2}")
+            # print(f"========== Turn {turn + 1} Input ==========\n {input_str_1}\n {input_str_2}")
 
             output_1 = executor_1.run(input_str_1)
             output_2 = executor_2.run(input_str_2)
-            print(f"========== Turn {turn + 1} Output ==========\n {output_1}\n {output_2}")
+            # print(f"========== Turn {turn + 1} Output ==========\n {output_1}\n {output_2}")
             
             # 构造裁判输入
             judge_input_dict['log'].append({}) # 奇数个元素留空

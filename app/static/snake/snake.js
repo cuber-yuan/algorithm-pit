@@ -43,7 +43,14 @@ class SnakeScene extends Phaser.Scene {
             this.load.image(`head_${color}_nodir`, `${assetPath}head_${color}_nodir.png`);
             this.load.image(`head_${color}_dir0`, `${assetPath}head_${color}_dir0.png`);
             this.load.image(`body_${color}_dir0`, `${assetPath}body_${color}_dir0.png`);
-            this.load.image(`body_${color}_dir01`, `${assetPath}body_${color}_dir01.png`);
+            // 加载所有可能的转弯素材
+            // for (let a = 0; a < 4; a++) {
+            //     for (let b = 0; b < 4; b++) {
+            //         if (a !== b) {
+            //             this.load.image(`body_${color}_dir${a}${b}`, `${assetPath}body_${color}_dir${a}${b}.png`);
+            //         }
+            //     }
+            // }
         });
     }
 
@@ -151,7 +158,8 @@ class SnakeScene extends Phaser.Scene {
     }
 
     renderSnake(snake, color, layer) {
-        const dirToAngle = [0, 90, 180, 270]; // 0:上, 1:右, 2:下, 3:左
+        const dirToAngle = [270, 180, 90, 0]; // 0:上, 1:右, 2:下, 3:左
+        const lineColor = color === 'red' ? 0xff0000 : 0x0000ff;
 
         for (let i = 0; i < snake.length; i++) {
             const segment = snake[i];
@@ -159,40 +167,62 @@ class SnakeScene extends Phaser.Scene {
             const y = (segment.y - 1 + 0.5) * this.CELL_SIZE;
             let spriteKey = '';
             let angle = 0;
-            let flipY = false;
 
             if (i === 0) { // 蛇头
                 spriteKey = segment.dir === -1 ? `head_${color}_nodir` : `head_${color}_dir0`;
                 if (segment.dir !== -1) angle = dirToAngle[segment.dir];
-            } else { // 身体
+            } else {
                 const prevSegment = snake[i - 1];
-                if (prevSegment.dir === segment.dir) { // 直线
+                // if (prevSegment.dir === segment.dir) { // 直线
                     spriteKey = `body_${color}_dir0`;
                     angle = dirToAngle[segment.dir];
-                } else { // 转弯
-                    spriteKey = `body_${color}_dir01`;
-                    // 进入方向：当前节段的方向
-                    // 出去方向：上一节段的方向
-                    const inDir = segment.dir;
-                    const outDir = prevSegment.dir;
-                    // 顺时针（如0->1、1->2、2->3、3->0）：直接旋转
-                    if ((inDir + 1) % 4 === outDir) {
-                        angle = dirToAngle[inDir];
-                        flipY = false;
-                    } else { // 逆时针（如1->0、2->1、3->2、0->3）：旋转+Y翻转
-                        angle = dirToAngle[inDir];
-                        flipY = true;
-                    }
-                }
+                // } else { // 转弯，代码绘制
+                //     // inDir: 当前节段的方向，outDir: 上一节段的方向
+                //     const inDir = (segment.dir+2)%4 ;
+                //     const outDir = prevSegment.dir;
+
+                //     // 计算格子中心
+                //     const cx = (segment.x - 1 + 0.5) * this.CELL_SIZE;
+                //     const cy = (segment.y - 1 + 0.5) * this.CELL_SIZE;
+                //     const half = this.CELL_SIZE / 2;
+                //     const quarter = this.CELL_SIZE / 4;
+                //     const g = this.add.graphics();
+                //     g.lineStyle(quarter, lineColor);
+
+                //     // 计算尾巴方向（inDir）和头方向（outDir）对应的起点和终点
+                //     // 0:上, 1:右, 2:下, 3:左
+                //     const dirToVec = [
+                //         { dx: 0, dy: -half }, // 上
+                //         { dx: half, dy: 0 },  // 右
+                //         { dx: 0, dy: half },  // 下
+                //         { dx: -half, dy: 0 }  // 左
+                //     ];
+
+                //     // 从尾巴方向进到中心
+                //     const tailVec = dirToVec[inDir];
+                //     const headVec = dirToVec[outDir];
+
+                //     // 画尾巴到中心
+                //     g.beginPath();
+                //     g.moveTo(cx + tailVec.dx, cy + tailVec.dy);
+                //     g.lineTo(cx, cy);
+                //     g.strokePath();
+
+                //     // 画中心到头方向
+                //     g.beginPath();
+                //     g.moveTo(cx, cy);
+                //     g.lineTo(cx + headVec.dx, cy + headVec.dy);
+                //     g.strokePath();
+
+                //     layer.add(g);
+                //     continue; // 跳过sprite绘制
+                // }
             }
 
             if (spriteKey) {
                 const sprite = this.add.sprite(x, y, spriteKey);
                 sprite.setDisplaySize(this.CELL_SIZE, this.CELL_SIZE);
                 sprite.setAngle(angle);
-                if (flipY) {
-                    sprite.setFlipY(true);
-                }
                 layer.add(sprite);
             }
         }
