@@ -27,7 +27,7 @@ def get_user_from_db(username):
         return {'username': row[0], 'password_hash': row[1]}
     return None
 
-def create_user_in_db(username, password):
+def create_user_in_db(username, password, email):
     password_hash = generate_password_hash(password)
     conn = pymysql.connect(
         host=os.getenv('DB_HOST'),
@@ -38,7 +38,7 @@ def create_user_in_db(username, password):
     )
     cursor = conn.cursor()
     try:
-        cursor.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s)", (username, password_hash))
+        cursor.execute("INSERT INTO users (username, password_hash, email) VALUES (%s, %s, %s)", (username, password_hash, email))
         conn.commit()
         return True
     except pymysql.err.IntegrityError:
@@ -84,11 +84,12 @@ def register():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        email = request.form.get('email')
         if not username or not password:
             return jsonify({"message": "Username and password required"}), 400
         if get_user_from_db(username):
             return jsonify({"message": "Username already exists"}), 409
-        if create_user_in_db(username, password):
+        if create_user_in_db(username, password, email):
             return redirect(url_for('main.home'))
         else:
             return jsonify({"message": "Registration failed"}), 500
