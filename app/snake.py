@@ -62,8 +62,10 @@ def register_snake_events(socketio):
         
     @socketio.on('new_game', namespace='/snake')
     def new_game(data):
-        print("New game request received:", data)
         user_id = data['user_id']
+        # 标记旧游戏为终止
+        if user_id in sessions:
+            sessions[user_id]['terminated'] = True
         bot_1_code = data.get('bot_1_code')
         bot_2_code = data.get('bot_2_code')
         cpp_path = os.path.join(os.path.dirname(__file__), 'snake_judge.exe')
@@ -84,7 +86,9 @@ def register_snake_events(socketio):
         executor_2 = _get_bot_executor(player_2_id) if player_2_type == 'bot' else None
 
         game_state_dict = game.cpp_judge.run_raw_json({});
-        # print(game_state_dict);
+        # fuck zhouhy, the judge have bugs
+        game_state_dict['display']['width'] , game_state_dict['display']['height'] = game_state_dict['display']['height'], game_state_dict['display']['width']
+
         maxTurn = 200
         judge_input_dict = {'log':[], 'initdata': game_state_dict['initdata']}
 
@@ -93,6 +97,7 @@ def register_snake_events(socketio):
 
         user_session = sessions.get(user_id)
         sid = user_session['sid']
+        
         emit('game_started', {
             'state': game_state_dict['display'],
             'game_id': game.game_id
@@ -137,6 +142,10 @@ def register_snake_events(socketio):
                 'state': game_state_dict['display'],
                 'game_id': game.game_id
             }
+            
+            # if sessions[user_id].get('terminated'):
+            #     print(f"User {user_id} started a new game, terminating previous game loop.")
+            #     break
             # print('this send to frontend', game_state_dict['display'])
             emit('update', response, room=sid)
 

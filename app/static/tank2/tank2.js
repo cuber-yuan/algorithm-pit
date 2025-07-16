@@ -41,7 +41,6 @@ class TankScene extends Phaser.Scene {
     }
 
     create() {
-        // 不再需要将场景实例赋值给全局变量
         // window.mainScene = this;
 
         const canvasWidth = this.game.config.width;
@@ -122,7 +121,7 @@ class TankScene extends Phaser.Scene {
         });
     }
 
-    // 你需要实现这个函数：根据双方行动推进本地状态
+    
     applyActions(actions0, actions1) {
         // 坦克行动顺序：蓝0、蓝1、红0、红1
         const dx = [0, 1, 0, -1], dy = [-1, 0, 1, 0];
@@ -156,20 +155,6 @@ class TankScene extends Phaser.Scene {
             }
             // Stay 或射击不动
         }
-
-        // 2. 处理坦克互撞（同一格多于1辆坦克全部死亡）
-        /*
-        for (let i = 0; i < 4; i++) {
-            if (!tanks[i].alive) continue;
-            for (let j = i + 1; j < 4; j++) {
-                if (!tanks[j].alive) continue;
-                if (tanks[i].x === tanks[j].x && tanks[i].y === tanks[j].y) {
-                    tanks[i].alive = false;
-                    tanks[j].alive = false;
-                }
-            }
-        }
-        */
 
         // 3. 处理射击（严格模拟 Tank2 规则）
         let bulletHits = []; // {x, y, type, shooter, dir, target?}

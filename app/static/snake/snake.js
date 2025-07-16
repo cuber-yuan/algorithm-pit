@@ -75,38 +75,23 @@ class SnakeScene extends Phaser.Scene {
         this.fieldWidth = state.width;
         this.fieldHeight = state.height;
         this.obstacles = state.obstacle;
-        this.turn = 0; // 重置回合数
+        this.turn = 0; 
 
-        // 正确使用后端传来的初始坐标
         this.snake1 = [{ x: state['0'].x, y: state['0'].y, dir: -1 }];
         this.snake2 = [{ x: state['1'].x, y: state['1'].y, dir: -1 }];
 
-        // 动态调整画布大小
+        // 动态调整画布大小，使整体不超出屏幕宽度
+        const maxScreenWidth = Math.min(window.innerWidth - 60, 900); // 60px边距，最大900
+        const cellSize = Math.floor(maxScreenWidth / this.fieldWidth);
+        const canvasWidth = cellSize * this.fieldWidth;
+        const canvasHeight = cellSize * this.fieldHeight;
+
         const container = document.getElementById('phaser-container');
-        // 你可以设置最大宽度或高度，比如最大600px
-        const maxCanvasWidth = 600;
-        const maxCanvasHeight = 600;
-        let canvasWidth = maxCanvasWidth;
-        let canvasHeight = maxCanvasHeight;
-        // if (this.fieldWidth / this.fieldHeight > 1) {
-            // 宽比高大，宽为最大，按比例缩放高
-            // canvasHeight = Math.round(maxCanvasWidth * this.fieldHeight / this.fieldWidth);
-        // } else {
-        //     // 高比宽大，高为最大，按比例缩放宽
-            canvasWidth = Math.round(maxCanvasHeight * this.fieldWidth / this.fieldHeight);
-        // }
-        // 设置容器尺寸
         container.style.width = canvasWidth + 'px';
         container.style.height = canvasHeight + 'px';
 
-        // Phaser 3 动态调整画布大小
-        this.game.scale.resize(canvasHeight, canvasWidth);
-
-        // 重新计算CELL_SIZE
-        const cellWidth = canvasWidth / this.fieldWidth;
-        const cellHeight = canvasHeight / this.fieldHeight;
-        this.CELL_SIZE = Math.min(cellWidth, cellHeight);
-
+        this.game.scale.resize(canvasWidth, canvasHeight);
+        this.CELL_SIZE = cellSize;
         this.renderAll();
     }
 
@@ -178,7 +163,6 @@ class SnakeScene extends Phaser.Scene {
 
     renderSnake(snake, color, layer) {
         const dirToAngle = [0, 270, 180, 90]; // (0:左, 1:下, 2:右, 3:上)
-        const lineColor = color === 'red' ? 0xff0000 : 0x0000ff;
 
         for (let i = 0; i < snake.length; i++) {
             const segment = snake[i];
@@ -201,36 +185,21 @@ class SnakeScene extends Phaser.Scene {
                     spriteKey = `body_${color}_dir0`;
                     angle = dirToAngle[segment.dir];
                 } else { // 转弯
-                    // inDir: 当前节段的方向，outDir: 上一节段的方向
                     const inDir = (segment.dir+2)%4;
                     const outDir = prevSegment.dir;
                     spriteKey = `body_${color}_dir01`;
 
-                    let flipX = false;
-                    let flipY = false;
                     if ((inDir + 1) % 4 === outDir) {
-                        // 顺时针：直接旋转到 inDir
                         angle = dirToAngle[inDir];
-                        flipX = false;
                     } else if ((inDir + 3) % 4 === outDir) {
-                        // 逆时针：旋转到 outDir，并 flipX
                         angle = dirToAngle[outDir];
-                        if( outDir === 0 || outDir === 2) {
-                            flipX = true; // 水平翻转
-                        }else{
-                            flipY = true; // 垂直翻转
-                        }
-                        
-
                     }
 
                     const sprite = this.add.sprite(x, y, spriteKey);
                     sprite.setDisplaySize(this.CELL_SIZE, this.CELL_SIZE);
                     sprite.setAngle(angle);
-                    // if (flipX) sprite.setFlipX(true);
-                    // if (flipY) sprite.setFlipY(true);
                     layer.add(sprite);
-                    continue; // 跳过后续spriteKey判断
+                    continue;
                 }
             }
 
@@ -282,7 +251,6 @@ socket.on('game_started', (data) => {
     currentGameId = data.game_id;
     gameOver = false;
 
-    // 隐藏遮罩层，确保新局开始时不显示
     hidePhaserMask();
 
     const scene = phaserGame.scene.getScene('SnakeScene');
@@ -306,7 +274,6 @@ socket.on('update', (data) => {
     
     if (data.winner) {
         let msg = data.winner === 'draw' ? 'Draw!' : `${data.winner.charAt(0).toUpperCase() + data.winner.slice(1)} player wins!`;
-        // showPhaserMask(msg); // --- Temporarily disabled
         gameOver = true;
     }
 });
@@ -335,9 +302,6 @@ function newGame() {
   }
   // showPhaserMask("Starting new game..."); // --- Temporarily disabled
 
-  // const topIsHuman = document.getElementById('top-is-human').checked;
-  // const bottomIsHuman = document.getElementById('bottom-is-human').checked;
-
   const leftPlayerId = document.getElementById('aiSelectLeft').value;
   const rightPlayerId = document.getElementById('aiSelectRight').value;
 
@@ -352,14 +316,22 @@ function newGame() {
 
 // --- Event Listeners & Phaser Initialization ---
 window.addEventListener('resize', () => {
-  CANVAS_SIZE = getCanvasSize();
-  if (phaserGame) {
-    phaserGame.scale.resize(CANVAS_SIZE, CANVAS_SIZE);
-    // if (maskRect || maskText) { // --- Temporarily disabled
-    //   let msg = maskText ? maskText.text : "Waiting for new game...";
-    //   showPhaserMask(msg);
-    // }
-  }
+  // 动态调整画布大小，使整体不超出屏幕宽度
+  const scene = phaserGame.scene.getScene('SnakeScene');
+        const maxScreenWidth = Math.min(window.innerWidth - 60, 900); // 60px边距，最大900
+        const cellSize = Math.floor(maxScreenWidth / scene.fieldWidth);
+        const canvasWidth = cellSize * scene.fieldWidth;
+        const canvasHeight = cellSize * scene.fieldHeight;
+
+        const container = document.getElementById('phaser-container');
+        container.style.width = canvasWidth + 'px';
+        container.style.height = canvasHeight + 'px';
+        
+        scene.scale.resize(canvasWidth, canvasHeight);
+
+        scene.CELL_SIZE = cellSize;
+
+        scene.renderAll();
 });
 
 document.addEventListener('DOMContentLoaded', () => {

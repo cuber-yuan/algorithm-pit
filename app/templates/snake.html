@@ -47,8 +47,8 @@
 <div class="bg-gray-100 py-10">
   <div class="max-w-screen-xl mx-auto">
     <!-- Game Canvas Section -->
-    <div style="position:relative;width:100%;max-width:600px;height:auto;margin:auto;box-sizing:border-box;">
-      <div id="phaser-container" style="width:100%;height:100%;"></div>
+    <div style="display:flex; justify-content:center;">
+      <div id="phaser-container" style="width:600px; height:100%;"></div>
     </div>
     <br>
     <div style="text-align:center;">
@@ -75,7 +75,7 @@
       <p style="margin-bottom:1em;">Unlike the traditional single-player Snake game, this version is a two-player competitive game where both
         players simultaneously make decisions each turn to control their own snake.</p>
       <p style="margin-bottom:1em;"></p>
-      <p style="margin-bottom:1em;">Players control a snake on an n × m grid. A snake is defined as a finite, ordered sequence of unique
+      <p style="margin-bottom:1em;">Players control a snake on an n*m grid. A snake is defined as a finite, ordered sequence of unique
         coordinates, where each adjacent pair of coordinates in the sequence are also adjacent on the grid (i.e., they
         differ by one unit in either the x or y direction). The first coordinate in the sequence represents the snake's
         head. Players can only control the direction of the snake's head (East, South, West, or North). The snake moves
@@ -88,7 +88,7 @@
         per turn (i.e., the tail is not removed), and <b>from turn 26 onwards, it grows by one unit every 3 turns</b>.
       </p>
       <p style="margin-bottom:1em;"></p>
-      <p style="margin-bottom:1em;">The map consists of an n × m grid made up of 1×1 grass tiles and obstacles. The map is centrally symmetric.</p>
+      <p style="margin-bottom:1em;">The map consists of an n*m grid made up of 1*1 grass tiles and obstacles. The map is centrally symmetric.</p>
       <p style="margin-bottom:1em;"></p>
       <p style="margin-bottom:1em;">A snake is considered dead if its head moves into an invalid position or if the input/output format is
         incorrect. Invalid positions include: out of bounds, an obstacle tile, the body of its own snake (excluding the
