@@ -4,6 +4,7 @@ import tempfile
 import os
 import sys
 import shutil
+from . import cpp_compiler
 
 class CodeExecutor:
     def __init__(self, code: str, language: str = 'python3'):
@@ -51,42 +52,20 @@ class CodeExecutor:
 
     # 修改方法签名以保持一致性（虽然逻辑不变）
     def _run_cpp(self, code_to_run: str, input_json: str) -> str:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            source_path = os.path.join(tmpdir, 'program.cpp')
-            binary_path = os.path.join(tmpdir, 'program')
+        compiler = cpp_compiler.CppCompiler()
+        path = compiler.compile(code_to_run)
 
-            # 写入主程序
-            with open(source_path, 'w', encoding='utf-8') as f:
-                f.write(code_to_run)
 
-            # 直接用相对路径引用 app/jsoncpp.cpp 和 app/jsoncpp
-            base_dir = os.path.dirname(os.path.abspath(__file__))
+        # 运行
+        result = subprocess.run(
+            [path],
+            input=input_json.encode(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=10
+        )
 
-            # 编译时直接引用 app 目录下的 jsoncpp.cpp 和 jsoncpp
-            compile_result = subprocess.run(
-                [
-                    'g++', '-std=c++17',
-                    source_path,
-                    f'-I{base_dir}',
-                    '-o', binary_path
-                ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
+        if result.returncode != 0:
+            raise RuntimeError(f"C++ runtime error: {result.stderr.decode()}")
 
-            if compile_result.returncode != 0:
-                raise RuntimeError(f"C++ compile error: {compile_result.stderr.decode()}")
-
-            # 运行
-            result = subprocess.run(
-                [binary_path],
-                input=input_json.encode(),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                timeout=10
-            )
-
-            if result.returncode != 0:
-                raise RuntimeError(f"C++ runtime error: {result.stderr.decode()}")
-
-            return result.stdout.decode()
+        return result.stdout.decode()
