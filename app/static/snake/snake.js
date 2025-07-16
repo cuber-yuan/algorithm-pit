@@ -230,9 +230,19 @@ function hidePhaserMask() {
 // --- Game Logic & Server Communication ---
 socket.on('init', (data) => { userId = data.user_id; });
 
+let bgmAudio = null;
+
 socket.on('game_started', (data) => {
     currentGameId = data.game_id;
     gameOver = false;
+
+    // 播放背景音乐
+    if (!bgmAudio) {
+        bgmAudio = new Audio('/static/snake/assets/snake.m4a'); 
+        bgmAudio.loop = true;
+    }
+    bgmAudio.currentTime = 0;
+    bgmAudio.play();
 
     hidePhaserMask();
 
@@ -254,6 +264,11 @@ socket.on('update', (data) => {
     if (scene && typeof scene.updateFromState === 'function') {
         scene.updateFromState(data.state);
     }
+    
+    let moveAudio = new Audio('/static/snake/assets/move.mp3');
+    moveAudio.volume = 0.1;
+    moveAudio.loop = false;
+    moveAudio.play();
 
     if (data.winner) {
         let msg = data.winner === 'draw' ? 'Draw!' : `${data.winner.charAt(0).toUpperCase() + data.winner.slice(1)} player wins!`;

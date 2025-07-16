@@ -24,10 +24,10 @@ def home():
 def games():
     return render_template('games.html')
 
-@main_bp.route('/about')
-def about():
+@main_bp.route('/rating')
+def rating():
     clean_expired_messages()
-    return render_template('about.html', messages=messages)
+    return render_template('rating.html')
 
 @main_bp.route('/chat', methods=['GET', 'POST'])
 def chat():
