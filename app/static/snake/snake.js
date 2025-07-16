@@ -46,6 +46,8 @@ class SnakeScene extends Phaser.Scene {
             this.load.image(`body_${color}_dir0`, `${assetPath}body_${color}_dir0.png`);
             this.load.image(`body_${color}_dir01`, `${assetPath}body_${color}_dir01.png`);
         });
+        // 加载障碍物素材
+        this.load.image('stone', `${assetPath}stone.png`);
     }
 
     create() {
@@ -86,13 +88,13 @@ class SnakeScene extends Phaser.Scene {
         const maxCanvasHeight = 600;
         let canvasWidth = maxCanvasWidth;
         let canvasHeight = maxCanvasHeight;
-        if (this.fieldWidth / this.fieldHeight > 1) {
+        // if (this.fieldWidth / this.fieldHeight > 1) {
             // 宽比高大，宽为最大，按比例缩放高
-            canvasHeight = Math.round(maxCanvasWidth * this.fieldHeight / this.fieldWidth);
-        } else {
-            // 高比宽大，高为最大，按比例缩放宽
+            // canvasHeight = Math.round(maxCanvasWidth * this.fieldHeight / this.fieldWidth);
+        // } else {
+        //     // 高比宽大，高为最大，按比例缩放宽
             canvasWidth = Math.round(maxCanvasHeight * this.fieldWidth / this.fieldHeight);
-        }
+        // }
         // 设置容器尺寸
         container.style.width = canvasWidth + 'px';
         container.style.height = canvasHeight + 'px';
@@ -159,13 +161,15 @@ class SnakeScene extends Phaser.Scene {
         this.snake1Layer.clear(true, true);
         this.snake2Layer.clear(true, true);
 
-        const graphics = this.add.graphics();
-        graphics.fillStyle(0x808080, 1);
+        // 使用图片渲染障碍物
         this.obstacles.forEach(obs => {
             // 渲染时将1-based坐标转换为0-based
-            graphics.fillRect((obs.x - 1) * this.CELL_SIZE, (obs.y - 1) * this.CELL_SIZE, this.CELL_SIZE, this.CELL_SIZE);
+            const x = (obs.x - 1 + 0.5) * this.CELL_SIZE;
+            const y = (obs.y - 1 + 0.5) * this.CELL_SIZE;
+            const sprite = this.add.sprite(x, y, 'stone');
+            sprite.setDisplaySize(this.CELL_SIZE, this.CELL_SIZE);
+            this.obstacleLayer.add(sprite);
         });
-        this.obstacleLayer.add(graphics);
 
         // 渲染两条蛇
         this.renderSnake(this.snake1, 'blue', this.snake1Layer);
@@ -239,3 +243,186 @@ class SnakeScene extends Phaser.Scene {
         }
     }
 }
+
+// --- Game Configuration & State ---
+let userId = null;
+let currentGameId = null;
+let gameOver = false;
+const socket = io('/snake');
+
+function getCanvasSize() {
+  const padding = window.innerWidth < 600 ? 24 : 70;
+  return Math.min(window.innerWidth - padding, 600); // Simplified calculation
+}
+
+let CANVAS_SIZE = getCanvasSize();
+let phaserGame; // Will be initialized in the Phaser config
+
+// --- UI Mask Functions (from Gomoku) ---
+let maskRect = null;
+let maskText = null;
+
+function showPhaserMask(msg = "Waiting for new game...") {
+  const scene = phaserGame.scene.getScene('SnakeScene');
+  if (!scene) return;
+  hidePhaserMask();
+  maskRect = scene.add.rectangle(CANVAS_SIZE / 2, CANVAS_SIZE / 2, CANVAS_SIZE, CANVAS_SIZE, 0x000000, 0.35).setDepth(1000);
+  maskText = scene.add.text(CANVAS_SIZE / 2, CANVAS_SIZE / 2, msg, { fontSize: Math.floor(CANVAS_SIZE / 18) + 'px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(1001);
+}
+
+function hidePhaserMask() {
+  if (maskRect) { maskRect.destroy(); maskRect = null; }
+  if (maskText) { maskText.destroy(); maskText = null; }
+}
+
+// --- Game Logic & Server Communication ---
+socket.on('init', (data) => { userId = data.user_id; });
+
+socket.on('game_started', (data) => {
+    currentGameId = data.game_id;
+    gameOver = false;
+
+    // 隐藏遮罩层，确保新局开始时不显示
+    hidePhaserMask();
+
+    const scene = phaserGame.scene.getScene('SnakeScene');
+    if (scene && typeof scene.updateFromState === 'function') {
+        scene.updateFromState(data.state);
+    } else {
+        console.error("SnakeScene or its updateFromState method is not available!");
+    }
+});
+
+socket.on('update', (data) => {
+    if (!currentGameId || data.game_id !== currentGameId) {
+        console.log(`Ignoring update for irrelevant game: ${data.game_id}`);
+        return;
+    }
+
+    const scene = phaserGame.scene.getScene('SnakeScene');
+    if (scene && typeof scene.updateFromState === 'function') {
+        scene.updateFromState(data.state);
+    }
+    
+    if (data.winner) {
+        let msg = data.winner === 'draw' ? 'Draw!' : `${data.winner.charAt(0).toUpperCase() + data.winner.slice(1)} player wins!`;
+        // showPhaserMask(msg); // --- Temporarily disabled
+        gameOver = true;
+    }
+});
+
+socket.on('finish', (data) => {
+  if (!currentGameId || data.game_id !== currentGameId) {
+        console.log(`Ignoring finish for irrelevant game: ${data.game_id}`);
+        return;
+    }
+    let winner = data.winner;
+    if(winner == 0){
+      showPhaserMask('Blue wins!'); 
+    }else if(winner == 1){
+      showPhaserMask('Red wins!');
+    }else{
+      showPhaserMask('Draw!');
+    }
+    
+    gameOver = true;
+});
+
+function newGame() {
+  if (!userId) {
+    alert("Not connected to server yet.");
+    return;
+  }
+  // showPhaserMask("Starting new game..."); // --- Temporarily disabled
+
+  // const topIsHuman = document.getElementById('top-is-human').checked;
+  // const bottomIsHuman = document.getElementById('bottom-is-human').checked;
+
+  const leftPlayerId = document.getElementById('aiSelectLeft').value;
+  const rightPlayerId = document.getElementById('aiSelectRight').value;
+
+  socket.emit('new_game', {
+    user_id: userId,
+    left_player_id: leftPlayerId,
+    right_player_id: rightPlayerId,
+    left_is_human: document.getElementById('left-is-human').checked,
+    right_is_human: document.getElementById('right-is-human').checked
+  });
+}
+
+// --- Event Listeners & Phaser Initialization ---
+window.addEventListener('resize', () => {
+  CANVAS_SIZE = getCanvasSize();
+  if (phaserGame) {
+    phaserGame.scale.resize(CANVAS_SIZE, CANVAS_SIZE);
+    // if (maskRect || maskText) { // --- Temporarily disabled
+    //   let msg = maskText ? maskText.text : "Waiting for new game...";
+    //   showPhaserMask(msg);
+    // }
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Attach event listener for the new game button
+    document.getElementById('newGameBtn').addEventListener('click', newGame);
+
+    // 只允许两个checkbox最多勾选一个
+    const leftCheckbox = document.getElementById('left-is-human');
+    const rightCheckbox = document.getElementById('right-is-human');
+    const leftSelect = document.getElementById('aiSelectLeft');
+    const rightSelect = document.getElementById('aiSelectRight');
+
+    leftCheckbox.addEventListener('change', () => {
+        if (leftCheckbox.checked) {
+            rightCheckbox.checked = false;
+            rightSelect.disabled = false;
+            rightSelect.classList.remove('bg-gray-200', 'cursor-not-allowed');
+        }
+        leftSelect.disabled = leftCheckbox.checked;
+        leftSelect.classList.toggle('bg-gray-200', leftCheckbox.checked);
+        leftSelect.classList.toggle('cursor-not-allowed', leftCheckbox.checked);
+    });
+
+    rightCheckbox.addEventListener('change', () => {
+        if (rightCheckbox.checked) {
+            leftCheckbox.checked = false;
+            leftSelect.disabled = false;
+            leftSelect.classList.remove('bg-gray-200', 'cursor-not-allowed');
+        }
+        rightSelect.disabled = rightCheckbox.checked;
+        rightSelect.classList.toggle('bg-gray-200', rightCheckbox.checked);
+        rightSelect.classList.toggle('cursor-not-allowed', rightCheckbox.checked);
+    });
+
+    // --- PHASER INITIALIZATION ---
+    const config = {
+        type: Phaser.AUTO,
+        width: CANVAS_SIZE,
+        height: CANVAS_SIZE,
+        parent: 'phaser-container',
+        
+        scene: [SnakeScene]
+    };
+    phaserGame = new Phaser.Game(config);
+
+    
+});
+
+let humanDirection = null; // 记录人类玩家当前方向（0:左, 1:下, 2:右, 3:上）
+
+document.addEventListener('keydown', (e) => {
+    let dir = null;
+    if (e.key === 'a' || e.key === 'A') dir = 0;      // 左
+    else if (e.key === 's' || e.key === 'S') dir = 1; // 下
+    else if (e.key === 'd' || e.key === 'D') dir = 2; // 右
+    else if (e.key === 'w' || e.key === 'W') dir = 3; // 上
+    if (dir !== null) {
+        humanDirection = dir;
+        socket.emit('player_move', 
+        {
+            user_id: userId,
+            game_id: currentGameId,
+            move: JSON.stringify({ response: { direction: dir } })
+        });
+    }
+});

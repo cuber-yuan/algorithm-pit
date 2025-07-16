@@ -6,13 +6,14 @@
 <aside class="sider-left">
   <div style="padding: 2rem;">
     <h2 style="font-size: 1.25rem; font-weight: bold;">Left Player</h2>
-    <select id="aiSelectLeft" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+    <select id="aiSelectLeft"
+      class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
       {% for bot in bots %}
       <option value="{{ bot[0] }}">{{ bot[1] }}</option>
       {% endfor %}
     </select>
     <div style="margin-top:1.5rem;">
-      <input type="checkbox" id="left-is-human"/>
+      <input type="checkbox" id="left-is-human" />
       <label for="top-is-human" style="margin-left:0.5rem;">Human</label>
     </div>
   </div>
@@ -23,13 +24,14 @@
 <aside class="sider-right">
   <div style="padding: 2rem;">
     <h2 style="font-size: 1.25rem; font-weight: bold;">Right Player</h2>
-    <select id="aiSelectRight" class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+    <select id="aiSelectRight"
+      class="block w-full border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
       {% for bot in bots %}
       <option value="{{ bot[0] }}">{{ bot[1] }}</option>
       {% endfor %}
     </select>
     <div style="margin-top:1.5rem;">
-      <input type="checkbox" id="right-is-human"/>
+      <input type="checkbox" id="right-is-human" />
       <label for="bottom-is-human" style="margin-left:0.5rem;">Human</label>
     </div>
   </div>
@@ -40,42 +42,7 @@
 <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
 <script src="{{ url_for('static', filename='snake/snake.js') }}"></script>
-
-<style>
-  canvas {
-    background: #c2d1a2; 
-    margin-top: 20px;
-    border: 2px solid #333;
-  }
-
-  /* --- Responsive Layout Control (from Gomoku) --- */
-  @media (max-width: 1200px) {
-    /* Target the main layout container from base.html */
-    .layout-main {
-      flex-direction: column; /* Stack items vertically */
-      align-items: center;   /* Center them horizontally */
-    }
-
-    /* Move the game board to the top */
-    .main-content {
-      order: -1; 
-    }
-
-    /* Restyle the sidebars for their new position */
-    .sider-left, .sider-right {
-      position: static;
-      width: 100%;
-      max-width: 500px;
-      margin-top: 1rem;
-      border-radius: 1rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-
-    .sider-right {
-        margin-top: 1rem;
-    }
-  }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='snake/snake.css') }}">
 
 <div class="bg-gray-100 py-10">
   <div class="max-w-screen-xl mx-auto">
@@ -85,219 +52,53 @@
     </div>
     <br>
     <div style="text-align:center;">
-        <p id="turnCounter" class="mt-4 text-lg font-semibold">Turn: 0</p>
-        <button id="newGameBtn" type="button" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New Game</button>
+      <p id="turnCounter" class="mt-4 text-lg font-semibold">Turn: 0</p>
+      <button id="newGameBtn" type="button" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New
+        Game</button>
     </div>
   </div>
 
   <section class="bg-white p-6 rounded-lg shadow-md" style="margin-top: 2rem;">
-        <h2 class="text-xl font-bold mb-4">How to Play as Human</h2>
-        <p></strong> Use <b>W</b> (up), <b>S</b> (down), <b>A</b> (left), <b>D</b> (right) keys on your keyboard to control your snake's direction each turn.</p>
-        <div class="prose max-w-none">
-            
-            
-        </div>
-    </section>
+    <h2 class="text-xl font-bold mb-4">How to Play as Human</h2>
+    <p></strong> Use <b>W</b> (up), <b>S</b> (down), <b>A</b> (left), <b>D</b> (right) keys on your keyboard to control
+      your snake's direction each turn.</p>
+    <div class="prose max-w-none">
+
+
+    </div>
+  </section>
 
   <section class="sample-bot-section bg-white p-6 rounded-lg shadow-md" style="margin-top: 2rem;">
-        <h2 class="text-xl font-bold mb-4">Regulations</h2>
-        
-        <div class="prose max-w-none">
-            <p>Unlike the traditional single-player Snake game, this version is a two-player competitive game where both players simultaneously make decisions each turn to control their own snake.</p>
+    <h2 class="text-xl font-bold mb-4">Regulations</h2>
 
-<p>Players control a snake on an n × m grid. A snake is defined as a finite, ordered sequence of unique coordinates, where each adjacent pair of coordinates in the sequence are also adjacent on the grid (i.e., they differ by one unit in either the x or y direction). The first coordinate in the sequence represents the snake's head. Players can only control the direction of the snake's head (East, South, West, or North). The snake moves at a constant speed: each move inserts a new head coordinate in the current direction and removes the last coordinate (tail) of the sequence.</p>
-
-<p>The initial positions of the snakes are at the top-left corner ([1,1]) and the bottom-right corner ([n,m]) of the grid, respectively. Each snake starts with a length of 1. Unlike the traditional version, there are no food pellets on the map. Instead, the snake grows automatically: for the first 25 turns, the snake grows by one unit per turn (i.e., the tail is not removed), and <b>from turn 26 onwards, it grows by one unit every 3 turns</b>.</p>
-
-<p>The map consists of an n × m grid made up of 1×1 grass tiles and obstacles. The map is centrally symmetric.</p>
-
-<p>A snake is considered dead if its head moves into an invalid position or if the input/output format is incorrect. Invalid positions include: out of bounds, an obstacle tile, the body of its own snake (excluding the head), or the body of the opponent's snake. The game ends immediately when any snake dies. If both snakes die at the same time, the game is a draw. Otherwise, the first to die loses, and the other wins.</p>
-
-<p>The values of n and m are randomly chosen: n is an integer in the range [10, 17], and m is in [10, 13]. Player programs must handle all valid combinations of n and m. The game guarantees that n + m is always an odd number.</p>
-
-            
-            
-        </div>
-    </section>
+    <div class="prose max-w-none" style="line-height:1.8; margin-bottom: 1.5rem;">
+      <p style="margin-bottom:1em;">Unlike the traditional single-player Snake game, this version is a two-player competitive game where both
+        players simultaneously make decisions each turn to control their own snake.</p>
+      <p style="margin-bottom:1em;"></p>
+      <p style="margin-bottom:1em;">Players control a snake on an n × m grid. A snake is defined as a finite, ordered sequence of unique
+        coordinates, where each adjacent pair of coordinates in the sequence are also adjacent on the grid (i.e., they
+        differ by one unit in either the x or y direction). The first coordinate in the sequence represents the snake's
+        head. Players can only control the direction of the snake's head (East, South, West, or North). The snake moves
+        at a constant speed: each move inserts a new head coordinate in the current direction and removes the last
+        coordinate (tail) of the sequence.</p>
+      <p style="margin-bottom:1em;"></p>
+      <p style="margin-bottom:1em;">The initial positions of the snakes are at the top-left corner ([1,1]) and the bottom-right corner ([n,m]) of
+        the grid, respectively. Each snake starts with a length of 1. Unlike the traditional version, there are no food
+        pellets on the map. Instead, the snake grows automatically: for the first 25 turns, the snake grows by one unit
+        per turn (i.e., the tail is not removed), and <b>from turn 26 onwards, it grows by one unit every 3 turns</b>.
+      </p>
+      <p style="margin-bottom:1em;"></p>
+      <p style="margin-bottom:1em;">The map consists of an n × m grid made up of 1×1 grass tiles and obstacles. The map is centrally symmetric.</p>
+      <p style="margin-bottom:1em;"></p>
+      <p style="margin-bottom:1em;">A snake is considered dead if its head moves into an invalid position or if the input/output format is
+        incorrect. Invalid positions include: out of bounds, an obstacle tile, the body of its own snake (excluding the
+        head), or the body of the opponent's snake. The game ends immediately when any snake dies. If both snakes die at
+        the same time, the game is a draw. Otherwise, the first to die loses, and the other wins.</p>
+      <p style="margin-bottom:1em;"></p>
+      <p style="margin-bottom:1em;">The values of n and m are randomly chosen: n is an integer in the range [10, 17], and m is in [10, 13]. Player
+        programs must handle all valid combinations of n and m. The game guarantees that n + m is always an odd number.
+      </p>
+    </div>
+  </section>
 </div>
-
-<script>
-// --- Game Configuration & State ---
-let userId = null;
-let currentGameId = null;
-let gameOver = false;
-const socket = io('/snake');
-
-function getCanvasSize() {
-  const padding = window.innerWidth < 600 ? 24 : 70;
-  return Math.min(window.innerWidth - padding, 600); // Simplified calculation
-}
-
-let CANVAS_SIZE = getCanvasSize();
-let phaserGame; // Will be initialized in the Phaser config
-
-// --- UI Mask Functions (from Gomoku) ---
-let maskRect = null;
-let maskText = null;
-
-function showPhaserMask(msg = "Waiting for new game...") {
-  const scene = phaserGame.scene.getScene('SnakeScene');
-  if (!scene) return;
-  hidePhaserMask();
-  maskRect = scene.add.rectangle(CANVAS_SIZE / 2, CANVAS_SIZE / 2, CANVAS_SIZE, CANVAS_SIZE, 0x000000, 0.35).setDepth(1000);
-  maskText = scene.add.text(CANVAS_SIZE / 2, CANVAS_SIZE / 2, msg, { fontSize: Math.floor(CANVAS_SIZE / 18) + 'px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(1001);
-}
-
-function hidePhaserMask() {
-  if (maskRect) { maskRect.destroy(); maskRect = null; }
-  if (maskText) { maskText.destroy(); maskText = null; }
-}
-
-// --- Game Logic & Server Communication ---
-socket.on('init', (data) => { userId = data.user_id; });
-
-socket.on('game_started', (data) => {
-    currentGameId = data.game_id;
-    gameOver = false;
-
-    // 隐藏遮罩层，确保新局开始时不显示
-    hidePhaserMask();
-
-    const scene = phaserGame.scene.getScene('SnakeScene');
-    if (scene && typeof scene.updateFromState === 'function') {
-        scene.updateFromState(data.state);
-    } else {
-        console.error("SnakeScene or its updateFromState method is not available!");
-    }
-});
-
-socket.on('update', (data) => {
-    if (!currentGameId || data.game_id !== currentGameId) {
-        console.log(`Ignoring update for irrelevant game: ${data.game_id}`);
-        return;
-    }
-
-    const scene = phaserGame.scene.getScene('SnakeScene');
-    if (scene && typeof scene.updateFromState === 'function') {
-        scene.updateFromState(data.state);
-    }
-    
-    if (data.winner) {
-        let msg = data.winner === 'draw' ? 'Draw!' : `${data.winner.charAt(0).toUpperCase() + data.winner.slice(1)} player wins!`;
-        // showPhaserMask(msg); // --- Temporarily disabled
-        gameOver = true;
-    }
-});
-
-socket.on('finish', (data) => {
-  if (!currentGameId || data.game_id !== currentGameId) {
-        console.log(`Ignoring finish for irrelevant game: ${data.game_id}`);
-        return;
-    }
-    let message = data.message;
-    showPhaserMask(message); // 显示遮罩层并展示message
-    gameOver = true;
-});
-
-function newGame() {
-  if (!userId) {
-    alert("Not connected to server yet.");
-    return;
-  }
-  // showPhaserMask("Starting new game..."); // --- Temporarily disabled
-
-  // const topIsHuman = document.getElementById('top-is-human').checked;
-  // const bottomIsHuman = document.getElementById('bottom-is-human').checked;
-
-  const leftPlayerId = document.getElementById('aiSelectLeft').value;
-  const rightPlayerId = document.getElementById('aiSelectRight').value;
-
-  socket.emit('new_game', {
-    user_id: userId,
-    left_player_id: leftPlayerId,
-    right_player_id: rightPlayerId,
-    left_is_human: document.getElementById('left-is-human').checked,
-    right_is_human: document.getElementById('right-is-human').checked
-  });
-}
-
-// --- Event Listeners & Phaser Initialization ---
-window.addEventListener('resize', () => {
-  CANVAS_SIZE = getCanvasSize();
-  if (phaserGame) {
-    phaserGame.scale.resize(CANVAS_SIZE, CANVAS_SIZE);
-    // if (maskRect || maskText) { // --- Temporarily disabled
-    //   let msg = maskText ? maskText.text : "Waiting for new game...";
-    //   showPhaserMask(msg);
-    // }
-  }
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    // Attach event listener for the new game button
-    document.getElementById('newGameBtn').addEventListener('click', newGame);
-
-    // 只允许两个checkbox最多勾选一个
-    const leftCheckbox = document.getElementById('left-is-human');
-    const rightCheckbox = document.getElementById('right-is-human');
-    const leftSelect = document.getElementById('aiSelectLeft');
-    const rightSelect = document.getElementById('aiSelectRight');
-
-    leftCheckbox.addEventListener('change', () => {
-        if (leftCheckbox.checked) {
-            rightCheckbox.checked = false;
-            rightSelect.disabled = false;
-            rightSelect.classList.remove('bg-gray-200', 'cursor-not-allowed');
-        }
-        leftSelect.disabled = leftCheckbox.checked;
-        leftSelect.classList.toggle('bg-gray-200', leftCheckbox.checked);
-        leftSelect.classList.toggle('cursor-not-allowed', leftCheckbox.checked);
-    });
-
-    rightCheckbox.addEventListener('change', () => {
-        if (rightCheckbox.checked) {
-            leftCheckbox.checked = false;
-            leftSelect.disabled = false;
-            leftSelect.classList.remove('bg-gray-200', 'cursor-not-allowed');
-        }
-        rightSelect.disabled = rightCheckbox.checked;
-        rightSelect.classList.toggle('bg-gray-200', rightCheckbox.checked);
-        rightSelect.classList.toggle('cursor-not-allowed', rightCheckbox.checked);
-    });
-
-    // --- PHASER INITIALIZATION ---
-    const config = {
-        type: Phaser.AUTO,
-        width: CANVAS_SIZE,
-        height: CANVAS_SIZE,
-        parent: 'phaser-container',
-        
-        scene: [SnakeScene]
-    };
-    phaserGame = new Phaser.Game(config);
-
-    
-});
-
-let humanDirection = null; // 记录人类玩家当前方向（0:左, 1:下, 2:右, 3:上）
-
-document.addEventListener('keydown', (e) => {
-    let dir = null;
-    if (e.key === 'a' || e.key === 'A') dir = 0;      // 左
-    else if (e.key === 's' || e.key === 'S') dir = 1; // 下
-    else if (e.key === 'd' || e.key === 'D') dir = 2; // 右
-    else if (e.key === 'w' || e.key === 'W') dir = 3; // 上
-    if (dir !== null) {
-        humanDirection = dir;
-        socket.emit('player_move', 
-        {
-            user_id: userId,
-            game_id: currentGameId,
-            move: JSON.stringify({ response: { direction: dir } })
-        });
-    }
-});
-
-
-</script>
 {% endblock %}
