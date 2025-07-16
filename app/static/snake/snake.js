@@ -266,7 +266,7 @@ socket.on('update', (data) => {
     }
     
     let moveAudio = new Audio('/static/snake/assets/move.mp3');
-    moveAudio.volume = 0.1;
+    moveAudio.volume = 0.2;
     moveAudio.loop = false;
     moveAudio.play();
 
