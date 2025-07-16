@@ -12,8 +12,8 @@
       {% endfor %}
     </select>
     <div style="margin-top:1.5rem;">
-      <input type="checkbox" id="top-is-human" disabled />
-      <label for="top-is-human" style="margin-left:0.5rem;">Human (disabled)</label>
+      <input type="checkbox" id="left-is-human"/>
+      <label for="top-is-human" style="margin-left:0.5rem;">Human</label>
     </div>
   </div>
 </aside>
@@ -29,8 +29,8 @@
       {% endfor %}
     </select>
     <div style="margin-top:1.5rem;">
-      <input type="checkbox" id="bottom-is-human" disabled />
-      <label for="bottom-is-human" style="margin-left:0.5rem;">Human (disabled)</label>
+      <input type="checkbox" id="right-is-human"/>
+      <label for="bottom-is-human" style="margin-left:0.5rem;">Human</label>
     </div>
   </div>
 </aside>
@@ -85,10 +85,19 @@
     </div>
     <br>
     <div style="text-align:center;">
-        <p id="turnCounter" class="mt-4 text-lg font-semibold">Turn: 1</p>
+        <p id="turnCounter" class="mt-4 text-lg font-semibold">Turn: 0</p>
         <button id="newGameBtn" type="button" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New Game</button>
     </div>
   </div>
+
+  <section class="bg-white p-6 rounded-lg shadow-md" style="margin-top: 2rem;">
+        <h2 class="text-xl font-bold mb-4">How to Play as Human</h2>
+        <p></strong> Use <b>W</b> (up), <b>S</b> (down), <b>A</b> (left), <b>D</b> (right) keys on your keyboard to control your snake's direction each turn.</p>
+        <div class="prose max-w-none">
+            
+            
+        </div>
+    </section>
 
   <section class="sample-bot-section bg-white p-6 rounded-lg shadow-md" style="margin-top: 2rem;">
         <h2 class="text-xl font-bold mb-4">Regulations</h2>
@@ -98,7 +107,7 @@
 
 <p>Players control a snake on an n × m grid. A snake is defined as a finite, ordered sequence of unique coordinates, where each adjacent pair of coordinates in the sequence are also adjacent on the grid (i.e., they differ by one unit in either the x or y direction). The first coordinate in the sequence represents the snake's head. Players can only control the direction of the snake's head (East, South, West, or North). The snake moves at a constant speed: each move inserts a new head coordinate in the current direction and removes the last coordinate (tail) of the sequence.</p>
 
-<p>The initial positions of the snakes are at the top-left corner ([1,1]) and the bottom-right corner ([n,m]) of the grid, respectively. Each snake starts with a length of 1. Unlike the traditional version, there are no food pellets on the map. Instead, the snake grows automatically: for the first 25 turns, the snake grows by one unit per turn (i.e., the tail is not removed), and from turn 26 onwards, it grows by one unit every 3 turns.</p>
+<p>The initial positions of the snakes are at the top-left corner ([1,1]) and the bottom-right corner ([n,m]) of the grid, respectively. Each snake starts with a length of 1. Unlike the traditional version, there are no food pellets on the map. Instead, the snake grows automatically: for the first 25 turns, the snake grows by one unit per turn (i.e., the tail is not removed), and <b>from turn 26 onwards, it grows by one unit every 3 turns</b>.</p>
 
 <p>The map consists of an n × m grid made up of 1×1 grass tiles and obstacles. The map is centrally symmetric.</p>
 
@@ -148,26 +157,18 @@ function hidePhaserMask() {
 socket.on('init', (data) => { userId = data.user_id; });
 
 socket.on('game_started', (data) => {
-    // --- DEBUG ---
-    console.log("--- [EVENT] game_started ---");
-    console.log("Received state object:", data.state);
-    // --- END DEBUG ---
-
     currentGameId = data.game_id;
     gameOver = false;
 
-    // --- 修改开始: 使用 Phaser 的官方方法获取场景 ---
+    // 隐藏遮罩层，确保新局开始时不显示
+    hidePhaserMask();
+
     const scene = phaserGame.scene.getScene('SnakeScene');
     if (scene && typeof scene.updateFromState === 'function') {
-        console.log("Calling scene.updateFromState...");
-        // console.log(data.state.initdata);
         scene.updateFromState(data.state);
     } else {
         console.error("SnakeScene or its updateFromState method is not available!");
     }
-    // --- 修改结束 ---
-
-    // hidePhaserMask(); // --- Temporarily disabled
 });
 
 socket.on('update', (data) => {
@@ -175,12 +176,11 @@ socket.on('update', (data) => {
         console.log(`Ignoring update for irrelevant game: ${data.game_id}`);
         return;
     }
-    // --- 修改开始: 使用 Phaser 的官方方法获取场景 ---
+
     const scene = phaserGame.scene.getScene('SnakeScene');
     if (scene && typeof scene.updateFromState === 'function') {
         scene.updateFromState(data.state);
     }
-    // --- 修改结束 ---
     
     if (data.winner) {
         let msg = data.winner === 'draw' ? 'Draw!' : `${data.winner.charAt(0).toUpperCase() + data.winner.slice(1)} player wins!`;
@@ -215,7 +215,9 @@ function newGame() {
   socket.emit('new_game', {
     user_id: userId,
     left_player_id: leftPlayerId,
-    right_player_id: rightPlayerId
+    right_player_id: rightPlayerId,
+    left_is_human: document.getElementById('left-is-human').checked,
+    right_is_human: document.getElementById('right-is-human').checked
   });
 }
 
@@ -235,24 +237,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Attach event listener for the new game button
     document.getElementById('newGameBtn').addEventListener('click', newGame);
 
-    // Logic for human checkboxes (Temporarily disabled)
-    /*
-    const topCheckbox = document.getElementById('top-is-human');
-    const topSelect = document.getElementById('aiSelectTop');
-    topCheckbox.addEventListener('change', () => {
-        topSelect.disabled = topCheckbox.checked;
-        topSelect.classList.toggle('bg-gray-200', topCheckbox.checked);
-        topSelect.classList.toggle('cursor-not-allowed', topCheckbox.checked);
+    // 只允许两个checkbox最多勾选一个
+    const leftCheckbox = document.getElementById('left-is-human');
+    const rightCheckbox = document.getElementById('right-is-human');
+    const leftSelect = document.getElementById('aiSelectLeft');
+    const rightSelect = document.getElementById('aiSelectRight');
+
+    leftCheckbox.addEventListener('change', () => {
+        if (leftCheckbox.checked) {
+            rightCheckbox.checked = false;
+            rightSelect.disabled = false;
+            rightSelect.classList.remove('bg-gray-200', 'cursor-not-allowed');
+        }
+        leftSelect.disabled = leftCheckbox.checked;
+        leftSelect.classList.toggle('bg-gray-200', leftCheckbox.checked);
+        leftSelect.classList.toggle('cursor-not-allowed', leftCheckbox.checked);
     });
 
-    const bottomCheckbox = document.getElementById('bottom-is-human');
-    const bottomSelect = document.getElementById('aiSelectBottom');
-    bottomCheckbox.addEventListener('change', () => {
-        bottomSelect.disabled = bottomCheckbox.checked;
-        bottomSelect.classList.toggle('bg-gray-200', bottomCheckbox.checked);
-        bottomSelect.classList.toggle('cursor-not-allowed', bottomCheckbox.checked);
+    rightCheckbox.addEventListener('change', () => {
+        if (rightCheckbox.checked) {
+            leftCheckbox.checked = false;
+            leftSelect.disabled = false;
+            leftSelect.classList.remove('bg-gray-200', 'cursor-not-allowed');
+        }
+        rightSelect.disabled = rightCheckbox.checked;
+        rightSelect.classList.toggle('bg-gray-200', rightCheckbox.checked);
+        rightSelect.classList.toggle('cursor-not-allowed', rightCheckbox.checked);
     });
-    */
 
     // --- PHASER INITIALIZATION ---
     const config = {
@@ -267,5 +278,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     
 });
+
+let humanDirection = null; // 记录人类玩家当前方向（0:左, 1:下, 2:右, 3:上）
+
+document.addEventListener('keydown', (e) => {
+    let dir = null;
+    if (e.key === 'a' || e.key === 'A') dir = 0;      // 左
+    else if (e.key === 's' || e.key === 'S') dir = 1; // 下
+    else if (e.key === 'd' || e.key === 'D') dir = 2; // 右
+    else if (e.key === 'w' || e.key === 'W') dir = 3; // 上
+    if (dir !== null) {
+        humanDirection = dir;
+        socket.emit('player_move', 
+        {
+            user_id: userId,
+            game_id: currentGameId,
+            move: JSON.stringify({ response: { direction: dir } })
+        });
+    }
+});
+
+
 </script>
 {% endblock %}

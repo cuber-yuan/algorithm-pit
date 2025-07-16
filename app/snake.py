@@ -74,8 +74,11 @@ def register_snake_events(socketio):
         player_1_id = data.get('left_player_id')
         player_2_id = data.get('right_player_id')
 
-        player_1_type = 'human' if player_1_id == 'human' else 'bot'
-        player_2_type = 'human' if player_2_id == 'human' else 'bot'
+        player_1_type = 'human' if data.get('left_is_human') else 'bot'
+        player_2_type = 'human' if data.get('right_is_human') else 'bot'
+
+        print(f"Starting game {game.game_id} with players: {player_1_id} ({player_1_type}) vs {player_2_id} ({player_2_type})")
+
 
         executor_1 = _get_bot_executor(player_1_id) if player_1_type == 'bot' else None
         executor_2 = _get_bot_executor(player_2_id) if player_2_type == 'bot' else None
@@ -102,13 +105,27 @@ def register_snake_events(socketio):
                 break
 
             
-            
             input_str_1 = json.dumps(input_dict_1)
             input_str_2 = json.dumps(input_dict_2)
             # print(f"========== Turn {turn + 1} Input ==========\n {input_str_1}\n {input_str_2}")
 
-            output_1 = executor_1.run(input_str_1)
-            output_2 = executor_2.run(input_str_2)
+            # 获取 output_1
+            if player_1_type == 'human':
+                # 等待玩家输入
+                while 'pending_move' not in sessions[user_id]:
+                    socketio.sleep(0.05)  # 避免死循环
+                output_1 = json.dumps(sessions[user_id].pop('pending_move'))
+            else:
+                output_1 = executor_1.run(input_str_1)
+
+            # 获取 output_2
+            if player_2_type == 'human':
+                while 'pending_move' not in sessions[user_id]:
+                    socketio.sleep(0.05)
+                output_2 = json.dumps(sessions[user_id].pop('pending_move'))
+            else:
+                output_2 = executor_2.run(input_str_2)
+
             # print(f"========== Turn {turn + 1} Output ==========\n {output_1}\n {output_2}")
             
             # 构造裁判输入
@@ -120,13 +137,12 @@ def register_snake_events(socketio):
                 'state': game_state_dict['display'],
                 'game_id': game.game_id
             }
-            # print(game_state_dict)
-            print('this send to frontend', game_state_dict['display'])
+            # print('this send to frontend', game_state_dict['display'])
             emit('update', response, room=sid)
 
             if game_state_dict['command'] == 'finish':
                 print(game_state_dict)
-                emit('finish', {"message": game_state_dict['err'], 'game_id': game.game_id}, room=sid)
+                emit('finish', {"message": game_state_dict['display']['err'], 'game_id': game.game_id}, room=sid)
                 print("Game finished by judge.")
                 break
             input_dict_1['requests'].append(json.loads(output_2)['response'])
@@ -147,3 +163,18 @@ def register_snake_events(socketio):
                 break
         if user_id_to_del:
             del sessions[user_id_to_del]
+
+
+
+    @socketio.on('player_move', namespace='/snake')
+    def handle_player_move(data):
+        user_id = data.get('user_id')
+        game_id = data.get('game_id') 
+        user_session = sessions.get(user_id)
+
+        if not user_id or not game_id or not user_session:
+            return
+
+        move = json.loads(data.get('move'))
+        sessions[user_id]['pending_move'] = move
+        # print(f"User {user_id} made a move: {move}")

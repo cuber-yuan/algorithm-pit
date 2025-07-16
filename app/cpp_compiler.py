@@ -41,8 +41,9 @@ class CppCompiler:
             if result.returncode != 0:
                 raise RuntimeError(f"C++ compile error:\n{result.stderr.decode()}")
         else:
-            print(f"Using cached executable: {exe_path}")
-            
+            pass
+            # print(f"Using cached executable: {exe_path}")
+
         return exe_path
 
     def run(self, exe_path: str, input_str: str = "", timeout=10) -> str:
