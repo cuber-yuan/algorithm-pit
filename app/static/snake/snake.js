@@ -50,10 +50,10 @@ class SnakeScene extends Phaser.Scene {
         this.snake1Layer = this.add.group();
         this.snake2Layer = this.add.group();
 
-        // this.moveSound = this.sound.add('move');
-        // this.explosionSound = this.sound.add('explosion');
-        // this.gameoverSound = this.sound.add('gameover');
-        // this.bgmSound = this.sound.add('bgm', { loop: true });
+        this.moveSound = this.sound.add('move');
+        this.explosionSound = this.sound.add('explosion');
+        this.gameoverSound = this.sound.add('gameover');
+        this.bgmSound = this.sound.add('bgm', { loop: true });
     }
 
     updateFromState(state) {
@@ -246,7 +246,7 @@ socket.on('game_started', (data) => {
     const scene = phaserGame.scene.getScene('SnakeScene');
     if (scene && typeof scene.updateFromState === 'function') {
         scene.updateFromState(data.state);
-        // scene.bgmSound.play();
+        scene.bgmSound.play();
     } else {
         console.error("SnakeScene or its updateFromState method is not available!");
     }
@@ -263,7 +263,7 @@ socket.on('update', (data) => {
         scene.updateFromState(data.state);
     }
 
-    // scene.moveSound.play({ volume: 0.2 });
+    scene.moveSound.play({ volume: 0.2 });
 
     // if (data.winner) {
     //     let msg = data.winner === 'draw' ? 'Draw!' : `${data.winner.charAt(0).toUpperCase() + data.winner.slice(1)} player wins!`;
@@ -271,15 +271,17 @@ socket.on('update', (data) => {
     // }
 });
 
+
+
 socket.on('finish', (data) => {
     if (!currentGameId || data.game_id !== currentGameId) {
         console.log(`Ignoring finish for irrelevant game: ${data.game_id}`);
         return;
     }
     const scene = phaserGame.scene.getScene('SnakeScene');
-    // scene.bgmSound.stop();
-    // scene.explosionSound.play({ volume: 0.3 });
-    // scene.gameoverSound.play({ volume: 1 });
+    scene.bgmSound.stop();
+    scene.explosionSound.play({ volume: 0.3 });
+    scene.gameoverSound.play({ volume: 1 });
 
     let winner = data.winner;
     if (winner == 0) {
@@ -335,7 +337,19 @@ window.addEventListener('resize', () => {
 
 document.addEventListener('DOMContentLoaded', () => {
     // Attach event listener for the new game button
-    document.getElementById('newGameBtn').addEventListener('click', newGame);
+    document.getElementById('newGameBtn').addEventListener('click', () => {
+        // 让 phaser 音频系统解锁
+        const scene = phaserGame.scene.getScene('SnakeScene');
+        if (scene && scene.sound.locked) {
+            scene.sound.unlock();
+        }
+        // 手动播放一次静音音效以解锁
+        if (scene && scene.bgmSound) {
+            scene.bgmSound.play({ volume: 0 });
+            scene.bgmSound.stop();
+        }
+        newGame();
+    });
 
     // 只允许两个checkbox最多勾选一个
     const leftCheckbox = document.getElementById('left-is-human');
