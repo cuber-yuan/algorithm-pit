@@ -285,6 +285,12 @@ socket.on('finish', (data) => {
         bgmAudio.pause();
         bgmAudio.currentTime = 0;
     }
+
+    let explosionAudio = new Audio('/static/snake/assets/explosion.mp3');
+    explosionAudio.volume = 0.5;
+    explosionAudio.loop = false;
+    explosionAudio.play();
+
     // 播放 gameover 音效
     gameoverAudio = new Audio('/static/snake/assets/gameover.m4a');
     gameoverAudio.volume = 1;
