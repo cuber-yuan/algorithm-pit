@@ -37,23 +37,12 @@ class SnakeScene extends Phaser.Scene {
         });
         // 加载障碍物素材
         this.load.image('stone', `${assetPath}stone.png`);
-
-        // 加载音频素材
-        this.load.audio('move', '/static/snake/assets/move.mp3');
-        this.load.audio('explosion', '/static/snake/assets/explosion.mp3');
-        this.load.audio('gameover', '/static/snake/assets/gameover.m4a');
-        this.load.audio('bgm', '/static/snake/assets/snake.m4a');
     }
 
     create() {
         this.obstacleLayer = this.add.group();
         this.snake1Layer = this.add.group();
         this.snake2Layer = this.add.group();
-
-        this.moveSound = this.sound.add('move');
-        this.explosionSound = this.sound.add('explosion');
-        this.gameoverSound = this.sound.add('gameover');
-        this.bgmSound = this.sound.add('bgm', { volume: 1 , loop: true });
     }
 
     updateFromState(state) {
@@ -246,7 +235,14 @@ socket.on('game_started', (data) => {
     const scene = phaserGame.scene.getScene('SnakeScene');
     if (scene && typeof scene.updateFromState === 'function') {
         scene.updateFromState(data.state);
-        scene.bgmSound.play({ volume: 1 });
+        // 原生 JS 播放背景音乐
+        if (!window.bgmAudio) {
+            window.bgmAudio = new Audio('/static/snake/assets/snake.m4a');
+            window.bgmAudio.loop = true;
+        }
+        window.bgmAudio.currentTime = 0;
+        window.bgmAudio.volume = 1;
+        window.bgmAudio.play();
     } else {
         console.error("SnakeScene or its updateFromState method is not available!");
     }
@@ -263,7 +259,10 @@ socket.on('update', (data) => {
         scene.updateFromState(data.state);
     }
 
-    scene.moveSound.play({ volume: 0.2 });
+    // 原生 JS 播放移动音效
+    let moveAudio = new Audio('/static/snake/assets/move.mp3');
+    moveAudio.volume = 0.2;
+    moveAudio.play();
 
     // if (data.winner) {
     //     let msg = data.winner === 'draw' ? 'Draw!' : `${data.winner.charAt(0).toUpperCase() + data.winner.slice(1)} player wins!`;
@@ -278,10 +277,19 @@ socket.on('finish', (data) => {
         console.log(`Ignoring finish for irrelevant game: ${data.game_id}`);
         return;
     }
-    const scene = phaserGame.scene.getScene('SnakeScene');
-    scene.bgmSound.stop();
-    scene.explosionSound.play({ volume: 0.3 });
-    scene.gameoverSound.play({ volume: 1 });
+    // 停止背景音乐
+    if (window.bgmAudio) {
+        window.bgmAudio.pause();
+        window.bgmAudio.currentTime = 0;
+    }
+    // 原生 JS 播放爆炸和 gameover 音效
+    let explosionAudio = new Audio('/static/snake/assets/explosion.mp3');
+    explosionAudio.volume = 0.3;
+    explosionAudio.play();
+
+    let gameoverAudio = new Audio('/static/snake/assets/gameover.m4a');
+    gameoverAudio.volume = 1;
+    gameoverAudio.play();
 
     let winner = data.winner;
     if (winner == 0) {
