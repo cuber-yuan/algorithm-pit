@@ -1,20 +1,9 @@
 // This script is loaded by tank.html after the Phaser game object is created.
 // The 'mainScene' variable is globally available and points to the main Phaser scene.
 
-const FIELD_WIDTH = 9, FIELD_HEIGHT = 9;
-const INIT_TANKS = [
-    { x: 2, y: 0, side: 0, alive: true }, // 蓝0
-    { x: 6, y: 0, side: 0, alive: true }, // 蓝1
-    { x: 6, y: 8, side: 1, alive: true }, // 红0
-    { x: 2, y: 8, side: 1, alive: true }, // 红1
-];
-const INIT_BASES = [
-    { x: 4, y: 0, side: 0, alive: true }, // 蓝基地
-    { x: 4, y: 8, side: 1, alive: true }, // 红基地
-];
+
 
 // --- Extend the main Phaser scene with our game logic ---
-
 class SnakeScene extends Phaser.Scene {
     constructor() {
         super({ key: 'SnakeScene' });
@@ -218,8 +207,16 @@ function showPhaserMask(msg = "Waiting for new game...") {
     const scene = phaserGame.scene.getScene('SnakeScene');
     if (!scene) return;
     hidePhaserMask();
-    maskRect = scene.add.rectangle(CANVAS_SIZE / 2, CANVAS_SIZE / 2, CANVAS_SIZE, CANVAS_SIZE, 0x000000, 0.35).setDepth(1000);
-    maskText = scene.add.text(CANVAS_SIZE / 2, CANVAS_SIZE / 2, msg, { fontSize: Math.floor(CANVAS_SIZE / 18) + 'px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5).setDepth(1001);
+
+    const width = scene.scale.width;
+    const height = scene.scale.height;
+
+    maskRect = scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.35).setDepth(1000);
+    maskText = scene.add.text(width / 2, height / 2, msg, {
+        fontSize: Math.floor(Math.min(width, height) / 18) + 'px',
+        color: '#fff',
+        fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(1001);
 }
 
 function hidePhaserMask() {
@@ -276,11 +273,23 @@ socket.on('update', (data) => {
     }
 });
 
+let gameoverAudio = null;
+
 socket.on('finish', (data) => {
     if (!currentGameId || data.game_id !== currentGameId) {
         console.log(`Ignoring finish for irrelevant game: ${data.game_id}`);
         return;
     }
+    // 停止背景音乐
+    if (bgmAudio) {
+        bgmAudio.pause();
+        bgmAudio.currentTime = 0;
+    }
+    // 播放 gameover 音效
+    gameoverAudio = new Audio('/static/snake/assets/gameover.m4a');
+    gameoverAudio.volume = 1;
+    gameoverAudio.play();
+
     let winner = data.winner;
     if (winner == 0) {
         showPhaserMask('Blue wins!');
@@ -297,7 +306,11 @@ function newGame() {
         alert("Not connected to server yet.");
         return;
     }
-    // showPhaserMask("Starting new game..."); // --- Temporarily disabled
+    // 停止 gameover 音效
+    if (gameoverAudio) {
+        gameoverAudio.pause();
+        gameoverAudio.currentTime = 0;
+    }
 
     const leftPlayerId = document.getElementById('aiSelectLeft').value;
     const rightPlayerId = document.getElementById('aiSelectRight').value;
