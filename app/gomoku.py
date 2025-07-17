@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 from . import socketio
-from .gomoku_judge import GomokuJudge
+from judges.gomoku_judge import GomokuJudge
 from uuid import uuid4
 from flask_socketio import emit, join_room
 import sys

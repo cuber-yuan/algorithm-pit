@@ -1,33 +1,38 @@
 // This script is loaded by tank.html after the Phaser game object is created.
 // The 'mainScene' variable is globally available and points to the main Phaser scene.
 
-
+let bgmAudio = new Audio('/static/snake/assets/snake.m4a');
+bgmAudio.loop = true;
+bgmAudio.volume = 1;
+let moveAudio = new Audio('/static/snake/assets/move.mp3');
+moveAudio.volume = 0.2;
+let explosionAudio = new Audio('/static/snake/assets/explosion.mp3');
+explosionAudio.volume = 0.3;
+let gameoverAudio = new Audio('/static/snake/assets/gameover.m4a');
+gameoverAudio.volume = 1;
 
 // --- Extend the main Phaser scene with our game logic ---
 class SnakeScene extends Phaser.Scene {
     constructor() {
         super({ key: 'SnakeScene' });
 
-        // 游戏状态变量
         this.fieldWidth = 0;
         this.fieldHeight = 0;
         this.snake1 = []; // 玩家1的蛇，格式: [{x, y, dir}]
         this.snake2 = []; // 玩家2的蛇，格式: [{x, y, dir}]
         this.obstacles = [];
 
-        // 绘图相关
         this.CELL_SIZE = 0;
         this.obstacleLayer = null;
         this.snake1Layer = null;
         this.snake2Layer = null;
-        this.turn = 0; // 回合数从0开始，第1回合时变为1
+        this.turn = 0; 
     }
 
     preload() {
         const assetPath = '/static/snake/assets/';
         const colors = ['red', 'blue'];
 
-        // 加载所有基础素材
         colors.forEach(color => {
             this.load.image(`head_${color}_nodir`, `${assetPath}head_${color}_nodir.png`);
             this.load.image(`head_${color}_dir0`, `${assetPath}head_${color}_dir0.png`);
@@ -35,7 +40,6 @@ class SnakeScene extends Phaser.Scene {
             this.load.image(`body_${color}_dir0`, `${assetPath}body_${color}_dir0.png`);
             this.load.image(`body_${color}_dir01`, `${assetPath}body_${color}_dir01.png`);
         });
-        // 加载障碍物素材
         this.load.image('stone', `${assetPath}stone.png`);
     }
 
@@ -235,14 +239,8 @@ socket.on('game_started', (data) => {
     const scene = phaserGame.scene.getScene('SnakeScene');
     if (scene && typeof scene.updateFromState === 'function') {
         scene.updateFromState(data.state);
-        // 原生 JS 播放背景音乐
-        if (!window.bgmAudio) {
-            window.bgmAudio = new Audio('/static/snake/assets/snake.m4a');
-            window.bgmAudio.loop = true;
-        }
-        window.bgmAudio.currentTime = 0;
-        window.bgmAudio.volume = 1;
-        window.bgmAudio.play();
+        bgmAudio.currentTime = 0;
+        bgmAudio.play();
     } else {
         console.error("SnakeScene or its updateFromState method is not available!");
     }
@@ -258,16 +256,7 @@ socket.on('update', (data) => {
     if (scene && typeof scene.updateFromState === 'function') {
         scene.updateFromState(data.state);
     }
-
-    // 原生 JS 播放移动音效
-    let moveAudio = new Audio('/static/snake/assets/move.mp3');
-    moveAudio.volume = 0.2;
     moveAudio.play();
-
-    // if (data.winner) {
-    //     let msg = data.winner === 'draw' ? 'Draw!' : `${data.winner.charAt(0).toUpperCase() + data.winner.slice(1)} player wins!`;
-    //     gameOver = true;
-    // }
 });
 
 
@@ -277,18 +266,13 @@ socket.on('finish', (data) => {
         console.log(`Ignoring finish for irrelevant game: ${data.game_id}`);
         return;
     }
-    // 停止背景音乐
-    if (window.bgmAudio) {
-        window.bgmAudio.pause();
-        window.bgmAudio.currentTime = 0;
-    }
-    // 原生 JS 播放爆炸和 gameover 音效
-    let explosionAudio = new Audio('/static/snake/assets/explosion.mp3');
-    explosionAudio.volume = 0.3;
-    explosionAudio.play();
 
-    let gameoverAudio = new Audio('/static/snake/assets/gameover.m4a');
-    gameoverAudio.volume = 1;
+    if (bgmAudio) {
+        bgmAudio.pause();
+        bgmAudio.currentTime = 0;
+    }
+
+    explosionAudio.play();
     gameoverAudio.play();
 
     let winner = data.winner;
@@ -346,16 +330,6 @@ window.addEventListener('resize', () => {
 document.addEventListener('DOMContentLoaded', () => {
     // Attach event listener for the new game button
     document.getElementById('newGameBtn').addEventListener('click', () => {
-        // 让 phaser 音频系统解锁
-        const scene = phaserGame.scene.getScene('SnakeScene');
-        if (scene && scene.sound.locked) {
-            scene.sound.unlock();
-        }
-        // 手动播放一次静音音效以解锁
-        if (scene && scene.bgmSound) {
-            scene.bgmSound.play({ volume: 0 });
-            scene.bgmSound.stop();
-        }
         newGame();
     });
 

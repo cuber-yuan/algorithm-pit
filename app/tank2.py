@@ -116,7 +116,7 @@ def register_tank_events(socketio):
         user_id = data['user_id']
         bot_top_code = data.get('bot_top_code')
         bot_bottom_code = data.get('bot_bottom_code')
-        cpp_path = os.path.join(os.path.dirname(__file__), 'tank_judge.exe')
+        cpp_path = os.path.join(os.path.dirname(__file__), '../judges/tank_judge.exe')
         game = TankGameSession(cpp_path, bot_top_code, bot_bottom_code)
         sessions[user_id] = {'sid': request.sid, 'game': game}
 

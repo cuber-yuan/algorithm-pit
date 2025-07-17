@@ -1,5 +1,5 @@
 import json
-from .code_executor import CodeExecutor # 假设 CodeExecutor 在这里
+# from .. import CodeExecutor # 假设 CodeExecutor 在这里
 
 BOARD_SIZE = 15
 
