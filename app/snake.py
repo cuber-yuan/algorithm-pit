@@ -3,7 +3,6 @@ import os
 import pymysql
 import time
 from uuid import uuid4
-import concurrent.futures
 
 from flask import Blueprint, request
 from flask_socketio import emit, join_room
@@ -115,27 +114,22 @@ def register_snake_events(socketio):
             input_str_2 = json.dumps(input_dict_2)
             # print(f"========== Turn {turn + 1} Input ==========\n {input_str_1}\n {input_str_2}")
 
-            def get_output_1():
-                if player_1_type == 'human':
-                    while 'pending_move' not in sessions[user_id]:
-                        socketio.sleep(0.05)
-                    return json.dumps(sessions[user_id].pop('pending_move'))
-                else:
-                    return executor_1.run(input_str_1)
+            # 获取 output_1
+            if player_1_type == 'human':
+                # 等待玩家输入
+                while 'pending_move' not in sessions[user_id]:
+                    socketio.sleep(0.05)  # 避免死循环
+                output_1 = json.dumps(sessions[user_id].pop('pending_move'))
+            else:
+                output_1 = executor_1.run(input_str_1)
 
-            def get_output_2():
-                if player_2_type == 'human':
-                    while 'pending_move' not in sessions[user_id]:
-                        socketio.sleep(0.05)
-                    return json.dumps(sessions[user_id].pop('pending_move'))
-                else:
-                    return executor_2.run(input_str_2)
-
-            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
-                future1 = pool.submit(get_output_1)
-                future2 = pool.submit(get_output_2)
-                output_1 = future1.result()
-                output_2 = future2.result()
+            # 获取 output_2
+            if player_2_type == 'human':
+                while 'pending_move' not in sessions[user_id]:
+                    socketio.sleep(0.05)
+                output_2 = json.dumps(sessions[user_id].pop('pending_move'))
+            else:
+                output_2 = executor_2.run(input_str_2)
 
             # print(f"========== Turn {turn + 1} Output ==========\n {output_1}\n {output_2}")
             
