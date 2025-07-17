@@ -239,6 +239,8 @@ socket.on('game_started', (data) => {
     const scene = phaserGame.scene.getScene('SnakeScene');
     if (scene && typeof scene.updateFromState === 'function') {
         scene.updateFromState(data.state);
+        gameoverAudio.pause();
+        gameoverAudio.currentTime = 0;
         bgmAudio.currentTime = 0;
         bgmAudio.play();
     } else {
