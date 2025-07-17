@@ -68,8 +68,7 @@
             </button>
 
             <!-- Navigation links -->
-            <ul id="menu"
-                class="hidden lg:flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-6 mt-4 lg:mt-0 items-center
+            <ul id="menu" class="hidden lg:flex flex-col lg:flex-row space-y-4 lg:space-y-0 lg:space-x-6 mt-4 lg:mt-0 items-center
                        absolute left-0 right-0 top-[64px] bg-gradient-to-r from-blue-800 to-blue-600 shadow-lg z-40
                        pb-4 lg:pb-0
                        lg:static lg:bg-none lg:shadow-none">
@@ -123,21 +122,25 @@
     {% endblock %}
 
     <div class="layout-main">
-        
-        
+
+
         {% block sidebar_left %}
         <aside class="sider-left">
         </aside>
         {% endblock %}
-        
-        
-        
-        
+
+
+
+
 
         <main class="main-content">
             {% block content %}{% endblock %}
         </main>
+
+        {% block floating_corner %}
         
+        {% endblock %}
+
         {% block sidebar_right %}
         <aside class="sider-right">
         </aside>

@@ -385,6 +385,20 @@ document.addEventListener('DOMContentLoaded', () => {
         rightSelect.classList.toggle('cursor-not-allowed', rightCheckbox.checked);
     });
 
+    // 方向按钮点击事件
+    document.getElementById('arrow-left').onclick = function() {
+        sendHumanDirection(0); // 左
+    };
+    document.getElementById('arrow-down').onclick = function() {
+        sendHumanDirection(1); // 下
+    };
+    document.getElementById('arrow-right').onclick = function() {
+        sendHumanDirection(2); // 右
+    };
+    document.getElementById('arrow-up').onclick = function() {
+        sendHumanDirection(3); // 上
+    };
+
     // --- PHASER INITIALIZATION ---
     const config = {
         type: Phaser.AUTO,
@@ -399,22 +413,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-let humanDirection = null; // 记录人类玩家当前方向（0:左, 1:下, 2:右, 3:上）
-
-document.addEventListener('keydown', (e) => {
-    let dir = null;
-    if (e.key === 'a' || e.key === 'A') dir = 0;      // 左
-    else if (e.key === 's' || e.key === 'S') dir = 1; // 下
-    else if (e.key === 'd' || e.key === 'D') dir = 2; // 右
-    else if (e.key === 'w' || e.key === 'W') dir = 3; // 上
-    if (dir !== null) {
-        humanDirection = dir;
-        socket.emit('player_move',
-            {
-                user_id: userId,
-                game_id: currentGameId,
-                move: JSON.stringify({ response: { direction: dir } })
-            });
-    }
-});
+// 发送人类玩家方向
+function sendHumanDirection(dir) {
+    humanDirection = dir;
+    socket.emit('player_move', {
+        user_id: userId,
+        game_id: currentGameId,
+        move: JSON.stringify({ response: { direction: dir } })
+    });
+}
 

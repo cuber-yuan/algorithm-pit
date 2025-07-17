@@ -38,6 +38,33 @@
 </aside>
 {% endblock %}
 
+{% block floating_corner %}
+<div id="floating-corner"
+  class="fixed bottom-6 right-6 z-50 bg-white bg-opacity-90 rounded-lg shadow-lg px-4 py-3 border border-gray-300 flex flex-col items-center block lg:hidden"
+  style="min-width:180px; min-height:80px;">
+  <div style="display: flex; flex-direction: column; align-items: center;">
+    <!-- 上箭头 -->
+    <button id="arrow-up" style="background: none; border: none; padding: 4px; margin-bottom: 4px;">
+      <img src="{{ url_for('static', filename='snake/assets/arrow.png') }}" alt="Up" style="width:32px; transform: rotate(-90deg);">
+    </button>
+    <div style="display: flex; flex-direction: row; justify-content: center;">
+      <!-- 左箭头 -->
+      <button id="arrow-left" style="background: none; border: none; padding: 4px; margin-right: 48px;">
+        <img src="{{ url_for('static', filename='snake/assets/arrow.png') }}" alt="Left" style="width:32px; transform: rotate(180deg);">
+      </button>
+      <!-- 右箭头 -->
+      <button id="arrow-right" style="background: none; border: none; padding: 4px;">
+        <img src="{{ url_for('static', filename='snake/assets/arrow.png') }}" alt="Right" style="width:32px; transform: rotate(0deg);">
+      </button>
+    </div>
+    <!-- 下箭头 -->
+    <button id="arrow-down" style="background: none; border: none; padding: 4px; margin-top: 4px;">
+      <img src="{{ url_for('static', filename='snake/assets/arrow.png') }}" alt="Down" style="width:32px; transform: rotate(90deg);">
+    </button>
+  </div>
+</div>
+{% endblock %}
+
 {% block content %}
 <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
@@ -72,30 +99,36 @@
     <h2 class="text-xl font-bold mb-4">Regulations</h2>
 
     <div class="prose max-w-none" style="line-height:1.8; margin-bottom: 1.5rem;">
-      <p style="margin-bottom:1em;">Unlike the traditional single-player Snake game, this version is a two-player competitive game where both
+      <p style="margin-bottom:1em;">Unlike the traditional single-player Snake game, this version is a two-player
+        competitive game where both
         players simultaneously make decisions each turn to control their own snake.</p>
       <p style="margin-bottom:1em;"></p>
-      <p style="margin-bottom:1em;">Players control a snake on an n*m grid. A snake is defined as a finite, ordered sequence of unique
+      <p style="margin-bottom:1em;">Players control a snake on an n*m grid. A snake is defined as a finite, ordered
+        sequence of unique
         coordinates, where each adjacent pair of coordinates in the sequence are also adjacent on the grid (i.e., they
         differ by one unit in either the x or y direction). The first coordinate in the sequence represents the snake's
         head. Players can only control the direction of the snake's head (East, South, West, or North). The snake moves
         at a constant speed: each move inserts a new head coordinate in the current direction and removes the last
         coordinate (tail) of the sequence.</p>
       <p style="margin-bottom:1em;"></p>
-      <p style="margin-bottom:1em;">The initial positions of the snakes are at the top-left corner ([1,1]) and the bottom-right corner ([n,m]) of
+      <p style="margin-bottom:1em;">The initial positions of the snakes are at the top-left corner ([1,1]) and the
+        bottom-right corner ([n,m]) of
         the grid, respectively. Each snake starts with a length of 1. Unlike the traditional version, there are no food
         pellets on the map. Instead, the snake grows automatically: for the first 25 turns, the snake grows by one unit
         per turn (i.e., the tail is not removed), and <b>from turn 26 onwards, it grows by one unit every 3 turns</b>.
       </p>
       <p style="margin-bottom:1em;"></p>
-      <p style="margin-bottom:1em;">The map consists of an n*m grid made up of 1*1 grass tiles and obstacles. The map is centrally symmetric.</p>
+      <p style="margin-bottom:1em;">The map consists of an n*m grid made up of 1*1 grass tiles and obstacles. The map is
+        centrally symmetric.</p>
       <p style="margin-bottom:1em;"></p>
-      <p style="margin-bottom:1em;">A snake is considered dead if its head moves into an invalid position or if the input/output format is
+      <p style="margin-bottom:1em;">A snake is considered dead if its head moves into an invalid position or if the
+        input/output format is
         incorrect. Invalid positions include: out of bounds, an obstacle tile, the body of its own snake (excluding the
         head), or the body of the opponent's snake. The game ends immediately when any snake dies. If both snakes die at
         the same time, the game is a draw. Otherwise, the first to die loses, and the other wins.</p>
       <p style="margin-bottom:1em;"></p>
-      <p style="margin-bottom:1em;">The values of n and m are randomly chosen: n is an integer in the range [10, 17], and m is in [10, 13]. Player
+      <p style="margin-bottom:1em;">The values of n and m are randomly chosen: n is an integer in the range [10, 17],
+        and m is in [10, 13]. Player
         programs must handle all valid combinations of n and m. The game guarantees that n + m is always an odd number.
       </p>
     </div>
