@@ -53,7 +53,7 @@ class SnakeScene extends Phaser.Scene {
         this.moveSound = this.sound.add('move');
         this.explosionSound = this.sound.add('explosion');
         this.gameoverSound = this.sound.add('gameover');
-        this.bgmSound = this.sound.add('bgm', { loop: true });
+        this.bgmSound = this.sound.add('bgm', { volume: 1 , loop: true });
     }
 
     updateFromState(state) {
@@ -246,7 +246,7 @@ socket.on('game_started', (data) => {
     const scene = phaserGame.scene.getScene('SnakeScene');
     if (scene && typeof scene.updateFromState === 'function') {
         scene.updateFromState(data.state);
-        scene.bgmSound.play();
+        scene.bgmSound.play({ volume: 1 });
     } else {
         console.error("SnakeScene or its updateFromState method is not available!");
     }
