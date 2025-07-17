@@ -37,12 +37,23 @@ class SnakeScene extends Phaser.Scene {
         });
         // 加载障碍物素材
         this.load.image('stone', `${assetPath}stone.png`);
+
+        // 加载音频素材
+        this.load.audio('move', '/static/snake/assets/move.mp3');
+        this.load.audio('explosion', '/static/snake/assets/explosion.mp3');
+        this.load.audio('gameover', '/static/snake/assets/gameover.m4a');
+        this.load.audio('bgm', '/static/snake/assets/snake.m4a');
     }
 
     create() {
         this.obstacleLayer = this.add.group();
         this.snake1Layer = this.add.group();
         this.snake2Layer = this.add.group();
+
+        this.moveSound = this.sound.add('move');
+        this.explosionSound = this.sound.add('explosion');
+        this.gameoverSound = this.sound.add('gameover');
+        this.bgmSound = this.sound.add('bgm', { loop: true });
     }
 
     updateFromState(state) {
@@ -153,7 +164,7 @@ class SnakeScene extends Phaser.Scene {
                 angle = dirToAngle[prevSegment.dir];
             } else {
                 const prevSegment = snake[i - 1];
-                if (prevSegment.dir === segment.dir) { // 直线
+                if (prevSegment.dir === segment.dir || (prevSegment.dir + 2) % 4 === segment.dir) { // 直线
                     spriteKey = `body_${color}_dir0`;
                     angle = dirToAngle[segment.dir];
                 } else { // 转弯
@@ -227,25 +238,15 @@ function hidePhaserMask() {
 // --- Game Logic & Server Communication ---
 socket.on('init', (data) => { userId = data.user_id; });
 
-let bgmAudio = null;
 
 socket.on('game_started', (data) => {
     currentGameId = data.game_id;
     gameOver = false;
-
-    // 播放背景音乐
-    if (!bgmAudio) {
-        bgmAudio = new Audio('/static/snake/assets/snake.m4a'); 
-        bgmAudio.loop = true;
-    }
-    bgmAudio.currentTime = 0;
-    bgmAudio.play();
-
     hidePhaserMask();
-
     const scene = phaserGame.scene.getScene('SnakeScene');
     if (scene && typeof scene.updateFromState === 'function') {
         scene.updateFromState(data.state);
+        scene.bgmSound.play();
     } else {
         console.error("SnakeScene or its updateFromState method is not available!");
     }
@@ -261,40 +262,26 @@ socket.on('update', (data) => {
     if (scene && typeof scene.updateFromState === 'function') {
         scene.updateFromState(data.state);
     }
-    
-    let moveAudio = new Audio('/static/snake/assets/move.mp3');
-    moveAudio.volume = 0.2;
-    moveAudio.loop = false;
-    moveAudio.play();
 
-    if (data.winner) {
-        let msg = data.winner === 'draw' ? 'Draw!' : `${data.winner.charAt(0).toUpperCase() + data.winner.slice(1)} player wins!`;
-        gameOver = true;
-    }
+    scene.moveSound.play({ volume: 0.2 });
+
+    // if (data.winner) {
+    //     let msg = data.winner === 'draw' ? 'Draw!' : `${data.winner.charAt(0).toUpperCase() + data.winner.slice(1)} player wins!`;
+    //     gameOver = true;
+    // }
 });
 
-let gameoverAudio = null;
+
 
 socket.on('finish', (data) => {
     if (!currentGameId || data.game_id !== currentGameId) {
         console.log(`Ignoring finish for irrelevant game: ${data.game_id}`);
         return;
     }
-    // 停止背景音乐
-    if (bgmAudio) {
-        bgmAudio.pause();
-        bgmAudio.currentTime = 0;
-    }
-
-    let explosionAudio = new Audio('/static/snake/assets/explosion.mp3');
-    explosionAudio.volume = 0.5;
-    explosionAudio.loop = false;
-    explosionAudio.play();
-
-    // 播放 gameover 音效
-    gameoverAudio = new Audio('/static/snake/assets/gameover.m4a');
-    gameoverAudio.volume = 1;
-    gameoverAudio.play();
+    const scene = phaserGame.scene.getScene('SnakeScene');
+    scene.bgmSound.stop();
+    scene.explosionSound.play({ volume: 0.3 });
+    scene.gameoverSound.play({ volume: 1 });
 
     let winner = data.winner;
     if (winner == 0) {
@@ -311,11 +298,6 @@ function newGame() {
     if (!userId) {
         alert("Not connected to server yet.");
         return;
-    }
-    // 停止 gameover 音效
-    if (gameoverAudio) {
-        gameoverAudio.pause();
-        gameoverAudio.currentTime = 0;
     }
 
     const leftPlayerId = document.getElementById('aiSelectLeft').value;
@@ -386,16 +368,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 方向按钮点击事件
-    document.getElementById('arrow-left').onclick = function() {
+    document.getElementById('arrow-left').onclick = function () {
         sendHumanDirection(0); // 左
     };
-    document.getElementById('arrow-down').onclick = function() {
+    document.getElementById('arrow-down').onclick = function () {
         sendHumanDirection(1); // 下
     };
-    document.getElementById('arrow-right').onclick = function() {
+    document.getElementById('arrow-right').onclick = function () {
         sendHumanDirection(2); // 右
     };
-    document.getElementById('arrow-up').onclick = function() {
+    document.getElementById('arrow-up').onclick = function () {
         sendHumanDirection(3); // 上
     };
 
@@ -411,6 +393,23 @@ document.addEventListener('DOMContentLoaded', () => {
     phaserGame = new Phaser.Game(config);
 
 
+});
+
+document.addEventListener('keydown', (e) => {
+    let dir = null;
+    if (e.key === 'a' || e.key === 'A') dir = 0;      // 左
+    else if (e.key === 's' || e.key === 'S') dir = 1; // 下
+    else if (e.key === 'd' || e.key === 'D') dir = 2; // 右
+    else if (e.key === 'w' || e.key === 'W') dir = 3; // 上
+    if (dir !== null) {
+        humanDirection = dir;
+        socket.emit('player_move',
+            {
+                user_id: userId,
+                game_id: currentGameId,
+                move: JSON.stringify({ response: { direction: dir } })
+            });
+    }
 });
 
 // 发送人类玩家方向
