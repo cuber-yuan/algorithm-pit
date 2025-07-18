@@ -118,6 +118,9 @@ def register_snake_events(socketio):
             def get_output_1():
                 if player_1_type == 'human':
                     while 'pending_move' not in sessions[user_id]:
+                        if user_id not in sessions or sessions[user_id]['sid'] != sid:
+                            # print(f"User {user_id} disconnected, terminating game loop.")
+                            break
                         socketio.sleep(0.05)
                     return json.dumps(sessions[user_id].pop('pending_move'))
                 else:
@@ -126,6 +129,9 @@ def register_snake_events(socketio):
             def get_output_2():
                 if player_2_type == 'human':
                     while 'pending_move' not in sessions[user_id]:
+                        if user_id not in sessions or sessions[user_id]['sid'] != sid:
+                            # print(f"User {user_id} disconnected, terminating game loop.")
+                            break
                         socketio.sleep(0.05)
                     return json.dumps(sessions[user_id].pop('pending_move'))
                 else:

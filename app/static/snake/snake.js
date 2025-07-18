@@ -239,10 +239,12 @@ socket.on('game_started', (data) => {
     const scene = phaserGame.scene.getScene('SnakeScene');
     if (scene && typeof scene.updateFromState === 'function') {
         scene.updateFromState(data.state);
+        document.getElementById('floating-corner').classList.remove('hidden');
         gameoverAudio.pause();
         gameoverAudio.currentTime = 0;
         bgmAudio.currentTime = 0;
         bgmAudio.play();
+        
     } else {
         console.error("SnakeScene or its updateFromState method is not available!");
     }
@@ -258,6 +260,7 @@ socket.on('update', (data) => {
     if (scene && typeof scene.updateFromState === 'function') {
         scene.updateFromState(data.state);
     }
+    document.getElementById('floating-corner').classList.remove('hidden');
     moveAudio.play();
 });
 
@@ -409,23 +412,18 @@ document.addEventListener('keydown', (e) => {
     else if (e.key === 'd' || e.key === 'D') dir = 2; // 右
     else if (e.key === 'w' || e.key === 'W') dir = 3; // 上
     if (dir !== null) {
-        humanDirection = dir;
-        socket.emit('player_move',
-            {
-                user_id: userId,
-                game_id: currentGameId,
-                move: JSON.stringify({ response: { direction: dir } })
-            });
+        sendHumanDirection(dir);
     }
 });
 
 // 发送人类玩家方向
 function sendHumanDirection(dir) {
-    humanDirection = dir;
+    document.getElementById('floating-corner').classList.add('hidden');
     socket.emit('player_move', {
         user_id: userId,
         game_id: currentGameId,
         move: JSON.stringify({ response: { direction: dir } })
     });
+    
 }
 
