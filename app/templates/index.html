@@ -8,6 +8,52 @@
 {% endblock %}
 
 {% block content %}
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script>
+    const socket = io('/');
+
+    socket.on('latest_matches', (data) => {
+
+        const matches = data.matches;
+        const tbody = document.querySelector('#latest-matches-tbody');
+        tbody.innerHTML = ''; 
+
+        matches.forEach(match => {
+
+            let players = {};
+            try {
+                players = JSON.parse(match.players);
+            } catch (e) {}
+
+            let winner = match.winner;
+            if (winner === null || winner === undefined) winner = 'Draw';
+
+            let date = match.created_at ? match.created_at.split(' ')[0] : '';
+
+            let displaysInfo = '';
+            try {
+                const displays = JSON.parse(match.displays);
+                displaysInfo = Array.isArray(displays) ? displays.length + ' rounds' : '';
+            } catch (e) {
+                displaysInfo = '';
+            }
+
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="px-4 py-2 border-b hidden sm:table-cell">${match.match_id}</td>
+                    <td class="px-4 py-2 border-b">${players.player_1 || ''}</td>
+                    <td class="px-4 py-2 border-b">${players.player_2 || ''}</td>
+                    <td class="px-4 py-2 border-b hidden sm:table-cell">${winner}</td>
+                    <td class="px-4 py-2 border-b hidden sm:table-cell">${displaysInfo}</td>
+                    <td class="px-4 py-2 border-b hidden sm:table-cell">${date}</td>
+                </tr>
+            `;
+        });
+    });
+
+</script>
+
 <div class="max-w-screen-lg mx-auto mt-8 space-y-12">
     <!-- Hero Section -->
     <section class="bg-gradient-to-r from-blue-600 to-blue-400 text-white p-8 rounded-lg shadow-lg">
@@ -26,40 +72,30 @@
     <section class="bg-gray-100 p-6 rounded-lg shadow-md">
         <h2 class="text-2xl font-semibold mb-4" style="margin-bottom:1em;">Latest Matches</h2>
         <div class="overflow-x-auto">
+            <p class="text-gray-700" style="margin-bottom:1em;">This feature is under development, currently only works for the Snake game.</p>
+            
             <table class="min-w-full text-left text-gray-700 border border-gray-300 rounded">
                 <thead>
                     <tr class="bg-gray-200">
                         <th class="px-4 py-2 border-b hidden sm:table-cell">Match ID</th>
                         <th class="px-4 py-2 border-b">Player 1</th>
                         <th class="px-4 py-2 border-b">Player 2</th>
-                        <th class="px-4 py-2 border-b">Winner</th>
+                        <th class="px-4 py-2 border-b hidden sm:table-cell">Winner</th>
+                        <th class="px-4 py-2 border-b hidden sm:table-cell">Displays</th>
                         <th class="px-4 py-2 border-b hidden sm:table-cell">Date</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td class="px-4 py-2 border-b hidden sm:table-cell">12345</td>
-                        <td class="px-4 py-2 border-b">Alice</td>
-                        <td class="px-4 py-2 border-b">Bob</td>
-                        <td class="px-4 py-2 border-b">Alice</td>
-                        <td class="px-4 py-2 border-b hidden sm:table-cell">2025-07-18</td>
-                    </tr>
-                    <tr>
-                        <td class="px-4 py-2 border-b hidden sm:table-cell">12346</td>
-                        <td class="px-4 py-2 border-b">Carol</td>
-                        <td class="px-4 py-2 border-b">Dave</td>
-                        <td class="px-4 py-2 border-b">Draw</td>
-                        <td class="px-4 py-2 border-b hidden sm:table-cell">2025-07-17</td>
-                    </tr>
+                <tbody id="latest-matches-tbody">
+                    <!-- JS will fill here -->
                 </tbody>
             </table>
         </div>
     </section>
 
     <!-- Placeholder Section 3 -->
-    <section class="bg-white p-6 rounded-lg shadow-md">
+    <!-- <section class="bg-white p-6 rounded-lg shadow-md">
         <h2 class="text-2xl font-semibold mb-4">Section</h2>
         <p class="text-gray-700">Use this section for additional information, links, or anything else you'd like to showcase.</p>
-    </section>
+    </section> -->
 </div>
 {% endblock %}

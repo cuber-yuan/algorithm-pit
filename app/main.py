@@ -26,7 +26,6 @@ def games():
 
 @main_bp.route('/rating')
 def rating():
-    clean_expired_messages()
     return render_template('rating.html')
 
 @main_bp.route('/chat', methods=['GET', 'POST'])

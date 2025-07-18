@@ -15,14 +15,17 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     
+    from .home import register_home_events
     from .gomoku import register_gomoku_events
     from .tank2 import register_tank_events
     from .snake import register_snake_events
+    register_home_events(socketio)
     register_gomoku_events(socketio)
     register_tank_events(socketio)
     register_snake_events(socketio)
 
     from .main import main_bp
+    from .home import home_bp
     from .auth import auth_bp
     from .upload import upload_bp
     from .gomoku import gomoku_bp
@@ -30,6 +33,7 @@ def create_app():
     from .snake import snake_bp
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(home_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(upload_bp)
     app.register_blueprint(gomoku_bp)

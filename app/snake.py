@@ -98,11 +98,13 @@ def register_snake_events(socketio):
 
         user_session = sessions.get(user_id)
         sid = user_session['sid']
-        
+        displays = []
+
         emit('game_started', {
             'state': game_state_dict['display'],
             'game_id': game.game_id
         }, room=sid)
+        displays.append(game_state_dict['display'])
 
         for turn in range(maxTurn):
             # 检查用户是否还在线
@@ -149,7 +151,7 @@ def register_snake_events(socketio):
             judge_input_dict['log'].append({}) # 奇数个元素留空
             judge_input_dict['log'].append({"0": json.loads(output_1), "1": json.loads(output_2)})
             game_state_dict = game.cpp_judge.run_raw_json(judge_input_dict)
-
+            displays.append(game_state_dict['display'])
             response = {
                 'state': game_state_dict['display'],
                 'game_id': game.game_id
@@ -167,8 +169,38 @@ def register_snake_events(socketio):
                     winner = game_state_dict['display']['winner']
                 else:
                     winner = -1
-                
+
                 emit('finish', {"winner": winner, 'game_id': game.game_id}, room=sid)
+                # --- Insert match record into database ---
+                try:
+                    conn = _get_db_connection()
+                    # 查 bots 表获取用户名
+                    with conn.cursor() as cursor:
+                        cursor.execute("SELECT bot_name FROM bots WHERE id = %s", (player_1_id,))
+                        row1 = cursor.fetchone()
+                        username_1 = row1['bot_name'] if row1 else str(player_1_id)
+                        cursor.execute("SELECT bot_name FROM bots WHERE id = %s", (player_2_id,))
+                        row2 = cursor.fetchone()
+                        username_2 = row2['bot_name'] if row2 else str(player_2_id)
+                    players = json.dumps({'player_1': username_1, 'player_2': username_2})
+                    with conn.cursor() as cursor:
+                        sql = """
+                            INSERT INTO matches (game, players, winner, displays)
+                            VALUES (%s, %s, %s, %s)
+                        """
+                        cursor.execute(sql, (
+                            'Snake',
+                            players,
+                            winner,
+                            json.dumps(displays)
+                        ))
+                        conn.commit()
+                except Exception as e:
+                    print("Failed to insert match record:", e)
+                finally:
+                    if conn:
+                        conn.close()
+                # --- End DB insert ---
                 print("Game finished by judge.")
                 break
             input_dict_1['requests'].append(json.loads(output_2)['response'])
