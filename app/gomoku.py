@@ -39,10 +39,10 @@ def _get_bot_executor(bot_id):
     try:
         conn = _get_db_connection()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT source_code, language FROM bots WHERE id = %s", (bot_id,))
+            cursor.execute("SELECT source_code, file_path, language FROM bots WHERE id = %s", (bot_id,))
             result = cursor.fetchone()
         if result:
-            return CodeExecutor(code=result['source_code'], language=result['language'])
+            return CodeExecutor(code=result['source_code'], language=result['language'], path=result['file_path'])
     finally:
         if conn:
             conn.close()

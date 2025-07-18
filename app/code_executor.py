@@ -4,20 +4,24 @@ import tempfile
 import os
 import sys
 import shutil
+import zipfile
 from . import cpp_compiler
 
 class CodeExecutor:
-    def __init__(self, code: str, language: str = 'python3'):
+    def __init__(self, code: str, language: str = 'python3', path: str = ""):
         self.code = code
         self.language = language.lower()
         self.exec_file = None  # For C++
-    
+        self.path = path
+
     def run(self, input_str: str) -> str:
         if self.language == 'python3':
-            # 将 self.code 作为参数直接传递
+            # If path is a .zip file, extract and run __main__.py
+            if self.path and self.path.endswith('.zip'):
+                return self._run_python_zip(self.path, input_str)
+            # Otherwise, run as single file
             return self._run_python(self.code, input_str)
         elif self.language == 'cpp':
-            # C++ 部分逻辑不变
             return self._run_cpp(self.code, input_str)
         else:
             raise ValueError(f"Unsupported language: {self.language}")
@@ -69,3 +73,31 @@ class CodeExecutor:
             raise RuntimeError(f"C++ runtime error: {result.stderr.decode()}")
 
         return result.stdout.decode()
+
+
+    ## TODO modify this method to handle zip files
+    def _run_python_zip(self, zip_path: str, input_str: str) -> str:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Extract zip to temp_dir
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(temp_dir)
+            main_path = os.path.join(temp_dir, '__main__.py')
+            if not os.path.exists(main_path):
+                raise RuntimeError("__main__.py not found in zip archive")
+            try:
+                result = subprocess.run(
+                    [sys.executable, "-u", main_path],
+                    input=input_str.encode('utf-8'),
+                    capture_output=True,
+                    timeout=10,
+                    check=True
+                )
+                return result.stdout.decode('utf-8')
+            except subprocess.CalledProcessError as e:
+                error_message = f"Bot code exited with error code {e.returncode}.\n" \
+                                f"--- STDOUT ---\n{e.stdout.decode('utf-8')}\n" \
+                                f"--- STDERR ---\n{e.stderr.decode('utf-8')}"
+                print(error_message)
+                raise RuntimeError(f"Bot execution failed. See server logs for details.")
+            except subprocess.TimeoutExpired:
+                raise RuntimeError("Python code execution timed out")
