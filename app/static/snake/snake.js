@@ -377,6 +377,17 @@ document.addEventListener('DOMContentLoaded', () => {
         sendHumanDirection(3); // 上
     };
 
+    // 主动缓存音乐文件
+    const audioFiles = [
+        '/static/snake/assets/snake.m4a',
+        '/static/snake/assets/move.mp3',
+        '/static/snake/assets/explosion.mp3',
+        '/static/snake/assets/gameover.m4a'
+    ];
+    audioFiles.forEach(url => {
+        fetch(url, { method: 'GET', cache: 'force-cache' }).catch(() => {});
+    });
+
     // --- PHASER INITIALIZATION ---
     const config = {
         type: Phaser.AUTO,

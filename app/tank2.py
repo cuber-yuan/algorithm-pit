@@ -49,16 +49,6 @@ class TankGameSession:
         
 
     def run_turn(self, judge_input_json):
-        """
-        judge_input_json: dict, 包含完整历史和地图信息，由前端维护和传递
-        1. 若有bot，则为bot生成输入，运行bot，获得动作，填入judge_input_json
-        2. 调用cpp裁判，返回裁判输出
-        """
-        # 1. 运行bot（如果有），生成双方动作
-        # 假设 judge_input_json["requests"] 和 "responses" 都是完整历史
-        # 只需为当前回合的bot补全动作即可
-        # 这里假设前端会把需要bot决策的回合留空或传None
-        # 你可以根据实际前端协议调整
         if self.bot_top:
             bot_input = self._make_bot_input(judge_input_json, side='top')
             bot_output = self.bot_top.run(bot_input)

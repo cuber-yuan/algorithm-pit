@@ -77,8 +77,10 @@ def upload_bot():
     # 保存文件或源代码
     file_path = None
     if bot_file:
-        file_name = f"{user_id}_{bot_name}_{bot_file.filename}"
-        file_path = os.path.join(UPLOAD_FOLDER, file_name)
+        # 构建保存路径 bots/用户名/bot名/
+        user_dir = os.path.join(UPLOAD_FOLDER, str(current_user.id), bot_name)
+        os.makedirs(user_dir, exist_ok=True)
+        file_path = os.path.join(user_dir, bot_file.filename)
         bot_file.save(file_path)
 
     # 保存到数据库
