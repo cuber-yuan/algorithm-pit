@@ -113,47 +113,49 @@ def register_tank_events(socketio):
         # Get player selections from the frontend.
         # Assumes frontend sends 'top_player_id' and 'bottom_player_id'
         # where the value is 'human' or a bot ID string.
-        top_player_id = data.get('top_player_id')
-        bottom_player_id = data.get('bottom_player_id')
+        player_1_id = data.get('top_player_id')
+        player_2_id = data.get('bottom_player_id')
 
-        top_player_type = 'human' if top_player_id == 'human' else 'bot'
-        bottom_player_type = 'human' if bottom_player_id == 'human' else 'bot'
+        player_1_type = 'human' if player_1_id == 'human' else 'bot'
+        player_2_type = 'human' if player_2_id == 'human' else 'bot'
 
-        top_executor = _get_bot_executor(top_player_id) if top_player_type == 'bot' else None
-        bot_executor = _get_bot_executor(bottom_player_id) if bottom_player_type == 'bot' else None
+        top_executor = _get_bot_executor(player_1_id) if player_1_type == 'bot' else None
+        bot_executor = _get_bot_executor(player_2_id) if player_2_type == 'bot' else None
 
         game_state_dict = game.cpp_judge.run_raw_json({});
         print(game_state_dict);
         maxTurn = game_state_dict['initdata']['maxTurn']
         judge_input_dict = {'log':[], 'initdata': game_state_dict['initdata']}
 
-        top_input_dict = { "requests": [game_state_dict['content']['0']], "responses": [] }
-        bot_input_dict = { "requests": [game_state_dict['content']['1']], "responses": [] }
+        input_dict_1 = { "requests": [game_state_dict['content']['0']], "responses": [] }
+        input_dict_2 = { "requests": [game_state_dict['content']['1']], "responses": [] }
 
         user_session = sessions.get(user_id)
         sid = user_session['sid']
+        displays = []
         emit('game_started', {
             'state': game_state_dict['display'],
             'game_id': game.game_id
         }, room=sid)
+        displays.append(game_state_dict['display'])
 
         for turn in range(maxTurn):
             # time.sleep(1)
             # print('this send to frontend', game_state_dict['display'])
 
-            top_input_str = json.dumps(top_input_dict)
-            bot_input_str = json.dumps(bot_input_dict)
+            input_str_1 = json.dumps(input_dict_1)
+            input_str_2 = json.dumps(input_dict_2)
             # print(f"========== Turn {turn + 1} Input ==========\n {top_input_str}\n {bot_input_str}")
 
-            top_output = top_executor.run(top_input_str)
-            bot_output = bot_executor.run(bot_input_str)
+            top_output = top_executor.run(input_str_1)
+            bot_output = bot_executor.run(input_str_2)
             # print(f"========== Turn {turn + 1} Output ==========\n {top_output}\n {bot_output}")
             
             # 构造裁判输入
             judge_input_dict['log'].append({}) # 奇数个元素留空
             judge_input_dict['log'].append({"0": json.loads(top_output), "1": json.loads(bot_output)})
             game_state_dict = game.cpp_judge.run_raw_json(judge_input_dict)
-
+            displays.append(game_state_dict['display'])
             response = {
                 'state': game_state_dict['display'],
                 'game_id': game.game_id
@@ -161,12 +163,48 @@ def register_tank_events(socketio):
             emit('update', response, room=sid)
 
             if game_state_dict['command'] == 'finish':
+                # print(game_state_dict)
+                winner = -2  # TODO: Determine winner from game_state_dict
+                # --- Insert match record into database ---
+                try:
+                    conn = _get_db_connection()
+                    # 查 bots 表获取用户名
+                    with conn.cursor() as cursor:
+                        cursor.execute("SELECT bot_name FROM bots WHERE id = %s", (player_1_id,))
+                        row1 = cursor.fetchone()
+                        username_1 = row1['bot_name'] if row1 else str(player_1_id)
+                        if player_1_type == 'human':
+                            username_1 = '<i>HUMAN</i>'
+                        cursor.execute("SELECT bot_name FROM bots WHERE id = %s", (player_2_id,))
+                        row2 = cursor.fetchone()
+                        username_2 = row2['bot_name'] if row2 else str(player_2_id)
+                        if player_2_type == 'human':
+                            username_2 = '<i>HUMAN</i>'
+                    players = json.dumps({'player_1': username_1, 'player_2': username_2})
+                    with conn.cursor() as cursor:
+                        sql = """
+                            INSERT INTO matches (game, players, winner, displays)
+                            VALUES (%s, %s, %s, %s)
+                        """
+                        cursor.execute(sql, (
+                            'Tank Battle',
+                            players,
+                            winner,
+                            json.dumps(displays)
+                        ))
+                        conn.commit()
+                except Exception as e:
+                    print("Failed to insert match record:", e)
+                finally:
+                    if conn:
+                        conn.close()
+                # --- End DB insert ---
                 print("Game finished by judge.")
                 break
-            top_input_dict['requests'].append(json.loads(bot_output)['response'])
-            top_input_dict['responses'].append(json.loads(top_output)['response'])
-            bot_input_dict['requests'].append(json.loads(top_output)['response'])
-            bot_input_dict['responses'].append(json.loads(bot_output)['response'])
+            input_dict_1['requests'].append(json.loads(bot_output)['response'])
+            input_dict_1['responses'].append(json.loads(top_output)['response'])
+            input_dict_2['requests'].append(json.loads(top_output)['response'])
+            input_dict_2['responses'].append(json.loads(bot_output)['response'])
 
             
             

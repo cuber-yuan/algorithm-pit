@@ -3,13 +3,8 @@ from . import socketio
 from judges.gomoku_judge import GomokuJudge
 from uuid import uuid4
 from flask_socketio import emit, join_room
-import sys
 import json
-import io
 from unittest.mock import patch
-import contextlib
-import subprocess
-import tempfile
 import os
 from .code_executor import CodeExecutor
 import uuid
@@ -20,9 +15,9 @@ load_dotenv()
 
 gomoku_bp = Blueprint('gomoku', __name__)
 
-sessions = {} # sessions 结构将变为 { user_id: { 'active_game_id': '...', game_id_1: game_obj_1, game_id_2: game_obj_2 } }
+sessions = {} 
 
-# --- 辅助函数 ---
+
 def _get_db_connection():
     return pymysql.connect(
         host=os.getenv('DB_HOST'),
@@ -49,16 +44,12 @@ def _get_bot_executor(bot_id):
     return None
 
 
-
-# --- SocketIO 事件处理器 ---
 def register_gomoku_events(socketio):
     @socketio.on('connect', namespace='/gomoku')
     def handle_connect():
         user_id = str(uuid4())
-        # 初始化用户的 session 存储
         sessions[user_id] = {'sid': request.sid}
         join_room(request.sid)
-        # 不再创建默认的 GomokuJudge 实例
         emit('init', {'user_id': user_id}, room=request.sid)
         print(f'new gomoku user connected: {user_id}')
 
@@ -68,33 +59,24 @@ def register_gomoku_events(socketio):
         user_session = sessions.get(user_id)
         if not user_session: return
 
-        # 1. 终止该用户所有正在运行的旧游戏
         for key, value in user_session.items():
             if isinstance(value, GomokuJudge):
                 value.terminate()
 
-        # 2. 创建一个全新的游戏实例
         game = GomokuJudge()
         game.game_id = str(uuid.uuid4())
         
-        # 3. 将新游戏实例存入用户会话中 (可以先清理旧的)
-        # 为了简化，我们只保留sid和新的游戏实例
         sid = user_session['sid']
         sessions[user_id] = {'sid': sid, game.game_id: game}
 
-        # 获取前端选择
-
         player_1_id = data.get('black_bot')
         player_2_id = data.get('white_bot')
-
         player_1_type = 'human' if data.get('black_is_human', False) else 'bot'
         player_2_type = 'human' if data.get('white_is_human', False) else 'bot'
 
-        # 为Bot创建执行器
         executor_1 = _get_bot_executor(player_1_id) if player_1_type == 'bot' else None
         executor_2 = _get_bot_executor(player_2_id) if player_2_type == 'bot' else None
 
-        # 初始化游戏
         game.new_game(
             black_player_type=player_1_type,
             white_player_type=player_2_type,
@@ -102,7 +84,6 @@ def register_gomoku_events(socketio):
             white_executor=executor_2
         )
 
-        # 4. 发送一个明确的 `game_started` 事件
         emit('game_started', {'board': game.board, 'game_id': game.game_id}, room=sid)
 
 
@@ -176,7 +157,6 @@ def register_gomoku_events(socketio):
                 # --- Insert match record into database ---
                 try:
                     conn = _get_db_connection()
-                    # 查 bots 表获取用户名
                     with conn.cursor() as cursor:
                         cursor.execute("SELECT bot_name FROM bots WHERE id = %s", (player_1_id,))
                         row1 = cursor.fetchone()
