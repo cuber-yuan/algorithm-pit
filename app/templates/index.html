@@ -28,7 +28,7 @@
             let winner = match.winner;
             if (winner === null || winner === undefined) winner = 'Draw';
 
-            let date = match.created_at ? match.created_at.split(' ')[0] : '';
+            let date = match.created_at || '';
 
             let displaysInfo = '';
             try {
@@ -72,7 +72,7 @@
     <section class="bg-gray-100 p-6 rounded-lg shadow-md">
         <h2 class="text-2xl font-semibold mb-4" style="margin-bottom:1em;">Latest Matches</h2>
         <div class="overflow-x-auto">
-            <p class="text-gray-700" style="margin-bottom:1em;">This feature is under development, currently only works for the Snake game.</p>
+            <p class="text-gray-700" style="margin-bottom:1em;">This feature is under development, currently only works for Snake and Gomoku.</p>
             
             <table class="min-w-full text-left text-gray-700 border border-gray-300 rounded">
                 <thead>
@@ -82,7 +82,7 @@
                         <th class="px-4 py-2 border-b">Player 2</th>
                         <th class="px-4 py-2 border-b hidden sm:table-cell">Winner</th>
                         <th class="px-4 py-2 border-b hidden sm:table-cell">Displays</th>
-                        <th class="px-4 py-2 border-b hidden sm:table-cell">Date</th>
+                        <th class="px-4 py-2 border-b hidden sm:table-cell">Time</th>
                     </tr>
                 </thead>
                 <tbody id="latest-matches-tbody">

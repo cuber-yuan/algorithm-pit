@@ -52,7 +52,7 @@ def register_home_events(socketio):
                 for match in matches:
                     for k, v in match.items():
                         if isinstance(v, datetime.datetime):
-                            match[k] = v.strftime('%Y-%m-%d %H:%M:%S')
+                            match[k] = v.strftime('%m-%d %H:%M')
         except Exception as e:
             print("Failed to fetch matches:", e)
             matches = []
