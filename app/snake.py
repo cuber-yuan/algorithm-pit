@@ -180,12 +180,12 @@ def register_snake_events(socketio):
                         row1 = cursor.fetchone()
                         username_1 = row1['bot_name'] if row1 else str(player_1_id)
                         if player_1_type == 'human':
-                            username_1 = 'HUMAN'
+                            username_1 = '<i>HUMAN</i>'
                         cursor.execute("SELECT bot_name FROM bots WHERE id = %s", (player_2_id,))
                         row2 = cursor.fetchone()
                         username_2 = row2['bot_name'] if row2 else str(player_2_id)
                         if player_2_type == 'human':
-                            username_2 = 'HUMAN'
+                            username_2 = '<i>HUMAN</i>'
                     players = json.dumps({'player_1': username_1, 'player_2': username_2})
                     with conn.cursor() as cursor:
                         sql = """

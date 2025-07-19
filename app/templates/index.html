@@ -19,11 +19,18 @@
         tbody.innerHTML = ''; 
 
         matches.forEach(match => {
-
             let players = {};
             try {
                 players = JSON.parse(match.players);
             } catch (e) {}
+
+            // Convert players object to "p0,p1,..." string
+            let playersStr = '';
+            if (players && typeof players === 'object') {
+                playersStr = Object.values(players)
+                    .map((v, i) => `${v}`)
+                    .join(', ');
+            }
 
             let winner = match.winner;
             if (winner === null || winner === undefined) winner = 'Draw';
@@ -41,9 +48,9 @@
 
             tbody.innerHTML += `
                 <tr>
-                    <td class="px-4 py-2 border-b hidden sm:table-cell">${match.match_id}</td>
-                    <td class="px-4 py-2 border-b">${players.player_1 || ''}</td>
-                    <td class="px-4 py-2 border-b">${players.player_2 || ''}</td>
+                    <td class="px-4 py-2 border-b">${match.game}</td>
+                    <td class="px-4 py-2 border-b">${playersStr}</td>
+                    
                     <td class="px-4 py-2 border-b hidden sm:table-cell">${winner}</td>
                     <td class="px-4 py-2 border-b hidden sm:table-cell">${displaysInfo}</td>
                     <td class="px-4 py-2 border-b hidden sm:table-cell">${date}</td>
@@ -77,9 +84,9 @@
             <table class="min-w-full text-left text-gray-700 border border-gray-300 rounded">
                 <thead>
                     <tr class="bg-gray-200">
-                        <th class="px-4 py-2 border-b hidden sm:table-cell">Match ID</th>
-                        <th class="px-4 py-2 border-b">Player 1</th>
-                        <th class="px-4 py-2 border-b">Player 2</th>
+                        <th class="px-4 py-2 border-b">Game</th>
+                        <th class="px-4 py-2 border-b">Players</th>
+                        <!-- <th class="px-4 py-2 border-b">Player 2</th> -->
                         <th class="px-4 py-2 border-b hidden sm:table-cell">Winner</th>
                         <th class="px-4 py-2 border-b hidden sm:table-cell">Displays</th>
                         <th class="px-4 py-2 border-b hidden sm:table-cell">Time</th>
