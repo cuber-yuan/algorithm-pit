@@ -48,66 +48,7 @@ def _get_bot_executor(bot_id):
             conn.close()
     return None
 
-def _trigger_next_turn(game, sid):
-    """核心函数：根据当前玩家类型决定下一步操作"""
-    # 在开始时检查终止状态
-    if game.winner != 0 or game.is_terminated:
-        return
 
-    current_player_type = game.black_player_type if game.current_player == 1 else game.white_player_type
-    
-    if current_player_type == 'human':
-        return
-
-    if current_player_type == 'bot':
-        executor = game.black_executor if game.current_player == 1 else game.white_executor
-        if not executor:
-            return
-
-        socketio.sleep(0.5)
-
-        # 在耗时操作后再次检查终止状态
-        if game.is_terminated:
-            return
-
-        input_str = game.send_action_to_ai()
-        output = executor.run(input_str)
-        
-        # 在IO操作后再次检查
-        if game.is_terminated:
-            return
-
-        try:
-            move_data = json.loads(output)
-            ai_x, ai_y = move_data['x'], move_data['y']
-        except (json.JSONDecodeError, KeyError):
-            print(f"AI for player {game.current_player} returned invalid data: {output}.")
-            # 可以设置一个默认的惩罚机制，比如判负
-            game.winner = 3 - game.current_player
-            emit('update', {'board': game.board, 'winner': game.winner, 'error_msg': 'AI returned invalid move.'}, room=sid)
-            return
-
-        if not game.apply_move(ai_x, ai_y):
-            # AI走了一步无效棋
-            game.winner = 3 - game.current_player
-            emit('update', {'board': game.board, 'winner': game.winner, 'error_msg': 'AI made an invalid move.'}, room=sid)
-            return
-
-        winner = game.check_win(ai_x, ai_y)
-        if winner != 0:
-            game.winner = winner
-
-        response = {
-            'board': game.board,
-            'ai_move': {'x': ai_x, 'y': ai_y, 'player': 3 - game.current_player},
-            'winner': game.winner,
-            'game_id': game.game_id
-        }
-        emit('update', response, room=sid)
-
-        # 递归调用前最后一次检查
-        if game.winner == 0 and not game.is_terminated:
-            _trigger_next_turn(game, sid)
 
 # --- SocketIO 事件处理器 ---
 def register_gomoku_events(socketio):
@@ -142,86 +83,150 @@ def register_gomoku_events(socketio):
         sessions[user_id] = {'sid': sid, game.game_id: game}
 
         # 获取前端选择
-        black_is_human = data.get('black_is_human', False)
-        white_is_human = data.get('white_is_human', False)
-        black_bot_id = data.get('black_bot')
-        white_bot_id = data.get('white_bot')
 
-        black_player_type = 'human' if black_is_human else 'bot'
-        white_player_type = 'human' if white_is_human else 'bot'
+        player_1_id = data.get('black_bot')
+        player_2_id = data.get('white_bot')
+
+        player_1_type = 'human' if data.get('black_is_human', False) else 'bot'
+        player_2_type = 'human' if data.get('white_is_human', False) else 'bot'
 
         # 为Bot创建执行器
-        black_executor = _get_bot_executor(black_bot_id) if not black_is_human else None
-        white_executor = _get_bot_executor(white_bot_id) if not white_is_human else None
+        executor_1 = _get_bot_executor(player_1_id) if player_1_type == 'bot' else None
+        executor_2 = _get_bot_executor(player_2_id) if player_2_type == 'bot' else None
 
         # 初始化游戏
         game.new_game(
-            black_player_type=black_player_type,
-            white_player_type=white_player_type,
-            black_executor=black_executor,
-            white_executor=white_executor
+            black_player_type=player_1_type,
+            white_player_type=player_2_type,
+            black_executor=executor_1,
+            white_executor=executor_2
         )
 
         # 4. 发送一个明确的 `game_started` 事件
         emit('game_started', {'board': game.board, 'game_id': game.game_id}, room=sid)
 
-        # 5. 开始新游戏的游戏循环
-        _trigger_next_turn(game, sid)
+
+        current_player_type = game.black_player_type if game.current_player == 1 else game.white_player_type
+        
+
+        def get_output_1(input: str = None):
+            if player_1_type == 'human':
+                while 'pending_move' not in sessions[user_id]:
+                    if user_id not in sessions or sessions[user_id]['sid'] != sid:
+                        # print(f"User {user_id} disconnected, terminating game loop.")
+                        break
+                    socketio.sleep(0.05)
+                return json.dumps(sessions[user_id].pop('pending_move'))
+            else:
+                return executor_1.run(input)
+
+        def get_output_2(input: str = None):
+            if player_2_type == 'human':
+                while 'pending_move' not in sessions[user_id]:
+                    if user_id not in sessions or sessions[user_id]['sid'] != sid:
+                        # print(f"User {user_id} disconnected, terminating game loop.")
+                        break
+                    socketio.sleep(0.05)
+                return json.dumps(sessions[user_id].pop('pending_move'))
+            else:
+                return executor_2.run(input)
+
+
+        # main game loop
+        for turn in range(256):
+            output_str = ""
+            # print(f"Turn {turn + 1}, current player: {game.current_player}")
+            input_str = game.send_action_to_ai()
+            # print(f"Input to AI: {input_str}")
+            if game.current_player == 1:
+                output_str = get_output_1(input_str)
+            if game.current_player == 2:
+                output_str = get_output_2(input_str)
+
+            try:
+                move_data = json.loads(output_str)
+                x, y = move_data['x'], move_data['y']
+            except (json.JSONDecodeError, KeyError):
+                print(f"AI for player {game.current_player} returned invalid data: {output_str}.")
+                game.winner = 3 - game.current_player
+                emit('update', {'board': game.board, 'winner': game.winner, 'error_msg': 'AI returned invalid move.'}, room=sid)
+                return
+            if game.is_terminated:
+                break
+
+
+            if not game.apply_move(x, y):
+                game.winner = 3 - game.current_player
+                emit('update', {'board': game.board, 'winner': game.winner, 'error_msg': 'AI made an invalid move.'}, room=sid)
+                return
+
+            winner = game.check_win(x, y)
+            if winner != 0:
+                game.winner = winner
+
+            response = {
+                'board': game.board,
+                'ai_move': {'x': x, 'y': y, 'player': 3 - game.current_player},
+                'winner': game.winner,
+                'game_id': game.game_id
+            }
+            emit('update', response, room=sid)
+            if game.winner != 0 or game.is_terminated:
+                print(f"Game ended after {turn + 1} turns. Winner: {game.winner}")
+                # --- Insert match record into database ---
+                try:
+                    conn = _get_db_connection()
+                    # 查 bots 表获取用户名
+                    with conn.cursor() as cursor:
+                        cursor.execute("SELECT bot_name FROM bots WHERE id = %s", (player_1_id,))
+                        row1 = cursor.fetchone()
+                        username_1 = row1['bot_name'] if row1 else str(player_1_id)
+                        cursor.execute("SELECT bot_name FROM bots WHERE id = %s", (player_2_id,))
+                        row2 = cursor.fetchone()
+                        username_2 = row2['bot_name'] if row2 else str(player_2_id)
+                    players = json.dumps({'player_1': username_1, 'player_2': username_2})
+                    with conn.cursor() as cursor:
+                        sql = """
+                            INSERT INTO matches (game, players, winner, displays)
+                            VALUES (%s, %s, %s, %s)
+                        """
+                        cursor.execute(sql, (
+                            'Gomoku',
+                            players,
+                            winner-1, # TODO set black as 0, white as 1
+                            json.dumps(response)
+                        ))
+                        conn.commit()
+                except Exception as e:
+                    print("Failed to insert match record:", e)
+                finally:
+                    if conn:
+                        conn.close()
+                # --- End DB insert ---
+                break
+
+                    
 
     @socketio.on('player_move', namespace='/gomoku')
     def handle_player_move(data):
         user_id = data.get('user_id')
-        game_id = data.get('game_id') # 获取前端传来的 game_id
+        game_id = data.get('game_id') 
         user_session = sessions.get(user_id)
-
-        # 验证 game_id 是否存在
         if not user_id or not game_id or not user_session:
             return
+        print(data)
+        sessions[user_id]['pending_move'] = data
 
-        # 3. 使用 game_id 精确查找游戏实例
-        game = user_session.get(game_id)
-        
-        # 核心验证：确保游戏存在，且未结束
-        if not game or game.winner != 0:
-            return
-        
-        sid = user_session['sid']
-
-        is_black_human_turn = game.current_player == 1 and game.black_player_type == 'human'
-        is_white_human_turn = game.current_player == 2 and game.white_player_type == 'human'
-
-        if not (is_black_human_turn or is_white_human_turn):
-            return # 不是当前人类玩家的回合
-
-        x, y = data['x'], data['y']
-        if not game.apply_move(x, y):
-            return
-
-        winner = game.check_win(x, y)
-        if winner != 0:
-            game.winner = winner
-
-        response = {
-            'board': game.board,
-            'move': {'x': x, 'y': y, 'player': 3 - game.current_player},
-            'winner': game.winner,
-            'game_id': game.game_id # 每次更新都带上 game_id
-        }
-        emit('update', response, room=sid)
-
-        if game.winner == 0:
-            _trigger_next_turn(game, sid)
 
     @socketio.on('disconnect', namespace='/gomoku')
     def handle_disconnect():
         user_id_to_del = None
         for user_id, session_data in sessions.items():
             if session_data.get('sid') == request.sid:
-                # 清理该用户的所有游戏实例
-                for key, value in list(session_data.items()):
-                    if isinstance(value, GomokuJudge):
-                        if value.black_executor: value.black_executor.cleanup()
-                        if value.white_executor: value.white_executor.cleanup()
+                # for key, value in list(session_data.items()):
+                #     if isinstance(value, GomokuJudge):
+                #         if value.black_executor: value.black_executor.cleanup()
+                #         if value.white_executor: value.white_executor.cleanup()
                 user_id_to_del = user_id
                 break
         
