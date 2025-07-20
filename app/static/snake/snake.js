@@ -180,8 +180,8 @@ const socket = io('/snake');
 
 // --- Canvas Size Helpers ---
 function getCanvasSize() {
-    const padding = window.innerWidth < 600 ? 24 : 70;
-    return Math.min(window.innerWidth - padding, 600);
+    // const padding = window.innerWidth < 600 ? 24 : 70;
+    return Math.min(window.innerWidth - 48, 600);
 }
 let CANVAS_SIZE = getCanvasSize();
 let phaserGame;
@@ -285,7 +285,12 @@ function newGame() {
 // --- Canvas Resize ---
 function resizeCanvas() {
     const scene = phaserGame.scene.getScene('SnakeScene');
-    const maxScreenWidth = Math.min(window.innerWidth - 60, 900);
+    // Add a guard to prevent running with invalid dimensions
+    if (!scene || !scene.fieldWidth || !scene.fieldHeight) {
+        
+        return;
+    }
+    const maxScreenWidth = Math.min(window.innerWidth * 0.95, 900);
     const cellSize = Math.floor(maxScreenWidth / scene.fieldWidth);
     const canvasWidth = cellSize * scene.fieldWidth;
     const canvasHeight = cellSize * scene.fieldHeight;
@@ -307,6 +312,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('newGameBtn').addEventListener('click', () => {
         newGame();
     });
+
+    // Phaser initialization
+    const config = {
+        type: Phaser.AUTO,
+        width: CANVAS_SIZE,
+        height: CANVAS_SIZE,
+        parent: 'phaser-container',
+        scene: [SnakeScene]
+    };
+    phaserGame = new Phaser.Game(config);
 
     // Only one human checkbox can be checked at a time
     const leftCheckbox = document.getElementById('left-is-human');
@@ -361,15 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch(url, { method: 'GET', cache: 'force-cache' }).catch(() => {});
     });
 
-    // Phaser initialization
-    const config = {
-        type: Phaser.AUTO,
-        width: CANVAS_SIZE,
-        height: CANVAS_SIZE,
-        parent: 'phaser-container',
-        scene: [SnakeScene]
-    };
-    phaserGame = new Phaser.Game(config);
+    
 });
 
 // Keyboard control for human player (WASD)
