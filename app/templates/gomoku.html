@@ -72,15 +72,12 @@
       border-radius: 1rem;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
-
-    .sider-right {
-        margin-top: 1rem; /* Ensure consistent spacing */
-    }
-
-    /* Optionally hide the sample code on small screens */
-    .sample-bot-section {
-        display: none;
-    }
+/*
+     .sider-right {
+        margin-top: 1rem; 
+    } 
+*/
+    
   }
 </style>
 
@@ -95,9 +92,9 @@
       <button type="button" onclick="newGame()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New Game</button>
     </div>
     <br>
-    <div style="margin-top: 2rem;"></div>
+    
     <!-- Sample Bot Code Section -->
-    <section class="sample-bot-section bg-white p-6 rounded-lg shadow-md mb-8">
+    <section class="sample-bot-section bg-white p-6 rounded-lg shadow-md mb-8 hidden xl:block" style="margin-top: 2rem;">
       <h2 class="text-xl font-bold mb-4">Sample Bot Code (Python)</h2>
       <pre class="bg-gray-100 p-4 rounded-lg border border-gray-300" style="white-space: pre-wrap; word-break: break-word;"><code class="language-python">import json
 import random
@@ -124,7 +121,7 @@ if __name__ == "__main__":
     </section>
 
     <!-- I/O Format Specification Section -->
-    <section class="sample-bot-section bg-white p-6 rounded-lg shadow-md">
+    <section class="io-section bg-white p-6 rounded-lg shadow-md hidden lg:block">
         <h2 class="text-xl font-bold mb-4">I/O Format Specification</h2>
         
         <div class="prose max-w-none">
@@ -297,13 +294,11 @@ socket.on('update', (data) => {
 });
 
 function newGame() {
-  // ... (获取 blackBot, whiteBot, isHuman 等) ...
   const blackBot = document.getElementById('aiSelectBlack').value;
   const whiteBot = document.getElementById('aiSelectWhite').value;
   const blackisHuman = document.getElementById('left-checkbox').checked;
   const whiteisHuman = document.getElementById('right-checkbox').checked;
   
-  // 客户端在请求新游戏时，也应该显示遮罩，并重置一些状态
   showPhaserMask("Starting new game..."); 
   
   socket.emit('new_game', {

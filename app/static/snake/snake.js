@@ -277,7 +277,8 @@ function newGame() {
         left_player_id: leftPlayerId,
         right_player_id: rightPlayerId,
         left_is_human: document.getElementById('left-is-human').checked,
-        right_is_human: document.getElementById('right-is-human').checked
+        right_is_human: document.getElementById('right-is-human').checked,
+        page_path: window.location.pathname
     });
 }
 
