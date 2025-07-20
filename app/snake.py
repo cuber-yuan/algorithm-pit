@@ -73,7 +73,6 @@ def register_snake_events(socketio):
         page_path = data.get('page_path', '')
         if '/msnake' in page_path:
             print("successfully change judge.")
-            return
             cpp_path = os.path.join(os.path.dirname(__file__), '../judges/msnake_judge.exe')
         game = SnakeGameSession(cpp_path, bot_1_code, bot_2_code)
         sessions[user_id] = {'sid': request.sid, 'game': game}
