@@ -129,6 +129,10 @@ def msnake():
     conn.close()
     return render_template('snake.html', bots=bots)
 
+@main_bp.route('/yahtzee')
+def yahtzee():
+    return render_template('yahtzee.html')
+
 @main_bp.route('/catking')
 def catking():
     return render_template('catking.html')

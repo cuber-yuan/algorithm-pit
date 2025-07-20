@@ -43,24 +43,20 @@
   class="fixed bottom-6 right-6 z-50 bg-white bg-opacity-90 rounded-lg shadow-lg px-4 py-3 border border-gray-300 flex flex-col items-center block lg:hidden hidden"
   style="min-width:180px; min-height:80px;">
   <div style="display: flex; flex-direction: column; align-items: center;">
-    <!-- 上箭头 -->
     <button id="arrow-up" style="background: none; border: none; padding: 4px; margin-bottom: 4px;">
       <img src="{{ url_for('static', filename='snake/assets/arrow.png') }}" alt="Up"
         style="width:32px; transform: rotate(-90deg);">
     </button>
     <div style="display: flex; flex-direction: row; justify-content: center;">
-      <!-- 左箭头 -->
       <button id="arrow-left" style="background: none; border: none; padding: 4px; margin-right: 48px;">
         <img src="{{ url_for('static', filename='snake/assets/arrow.png') }}" alt="Left"
           style="width:32px; transform: rotate(180deg);">
       </button>
-      <!-- 右箭头 -->
       <button id="arrow-right" style="background: none; border: none; padding: 4px;">
         <img src="{{ url_for('static', filename='snake/assets/arrow.png') }}" alt="Right"
           style="width:32px; transform: rotate(0deg);">
       </button>
     </div>
-    <!-- 下箭头 -->
     <button id="arrow-down" style="background: none; border: none; padding: 4px; margin-top: 4px;">
       <img src="{{ url_for('static', filename='snake/assets/arrow.png') }}" alt="Down"
         style="width:32px; transform: rotate(90deg);">
@@ -70,13 +66,8 @@
 {% endblock %}
 
 {% block content %}
-<style>
-  .main-content {
-    padding: 0;
-  }
-</style>
-<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
 <script src="{{ url_for('static', filename='snake/snake.js') }}"></script>
 <link rel="stylesheet" href="{{ url_for('static', filename='snake/snake.css') }}">

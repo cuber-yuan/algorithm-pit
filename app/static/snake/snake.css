@@ -18,8 +18,9 @@ canvas {
     /* Move the game board to the top */
     .main-content {
         order: -1;
+        padding: 0;
     }
-
+    
     /* Restyle the sidebars for their new position */
     .sider-left,
     .sider-right {
