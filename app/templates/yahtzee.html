@@ -135,7 +135,7 @@
                         </button>
                     </div>
                     <div class="space-y-2 text-sm">
-                        <p><strong>Round:</strong> <span id="current-round">1</span> / 13</p>
+                        <p><strong>Round:</strong> <span id="current-round">1</span></p>
                         <p><strong>Status:</strong> <span id="game-status">Roll the dice!</span></p>
                     </div>
                 </div>
@@ -322,12 +322,12 @@ class YahtzeeGame {
         const sum = this.dice.reduce((a, b) => a + b, 0);
         
         switch (category) {
-            case 'ones': return counts[1] * 1;
-            case 'twos': return counts[2] * 2;
-            case 'threes': return counts[3] * 3;
-            case 'fours': return counts[4] * 4;
-            case 'fives': return counts[5] * 5;
-            case 'sixes': return counts[6] * 6;
+            case 'ones': return (counts[1] || 0) * 1;
+            case 'twos': return (counts[2] || 0) * 2;
+            case 'threes': return (counts[3] || 0) * 3;
+            case 'fours': return (counts[4] || 0) * 4;
+            case 'fives': return (counts[5] || 0) * 5;
+            case 'sixes': return (counts[6] || 0) * 6;
             case 'three-of-a-kind':
                 return Object.values(counts).some(count => count >= 3) ? sum : 0;
             case 'four-of-a-kind':
@@ -398,7 +398,16 @@ class YahtzeeGame {
         
         // Update game info
         document.getElementById('rolls-left').textContent = this.rollsLeft;
-        document.getElementById('current-round').textContent = this.currentRound;
+        
+        
+        const roundElement = document.getElementById('current-round');
+        if (this.gameOver) {
+            roundElement.textContent = 'Complete';
+            // roundElement.parentElement.style.display = 'none';
+        } else {
+            roundElement.textContent = `${this.currentRound} / 13`;
+            // roundElement.parentElement.style.display = 'block';
+        }
         
         // Update roll button
         const rollBtn = document.getElementById('roll-btn');
