@@ -7,7 +7,6 @@ from uuid import uuid4
 import os
 import json
 import pymysql
-import time
 
 
 tank_bp = Blueprint('tank', __name__)
@@ -29,10 +28,10 @@ def _get_bot_executor(bot_id):
     try:
         conn = _get_db_connection()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT source_code, language FROM bots WHERE id = %s", (bot_id,))
+            cursor.execute("SELECT source_code, file_path, language FROM bots WHERE id = %s", (bot_id,))
             result = cursor.fetchone()
         if result:
-            return CodeExecutor(code=result['source_code'], language=result['language'])
+            return CodeExecutor(code=result['source_code'], language=result['language'], path=result['file_path'])
     finally:
         if conn:
             conn.close()
@@ -212,7 +211,7 @@ def register_tank_events(socketio):
     @socketio.on('player_move', namespace='/tank2')
     def handle_player_move(data):
         user_id = data.get('user_id')
-        judge_input_json = data.get('judge_input_json')  # 前端传来的完整json
+        judge_input_json = data.get('judge_input_json')
         if not user_id or not judge_input_json: return
         game = sessions.get(user_id, {}).get('game')
         if not game: return

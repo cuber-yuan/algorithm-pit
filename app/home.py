@@ -33,9 +33,6 @@ def _get_db_connection():
         cursorclass=pymysql.cursors.DictCursor
     )
 
-
-
-
 def register_home_events(socketio):
     @socketio.on('connect', namespace='/')
     def handle_connect():

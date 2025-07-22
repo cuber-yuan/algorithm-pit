@@ -1,7 +1,6 @@
 import json
 import os
 import pymysql
-import time
 from uuid import uuid4
 import concurrent.futures
 
@@ -30,10 +29,10 @@ def _get_bot_executor(bot_id):
     try:
         conn = _get_db_connection()
         with conn.cursor() as cursor:
-            cursor.execute("SELECT source_code, language FROM bots WHERE id = %s", (bot_id,))
+            cursor.execute("SELECT source_code, file_path, language FROM bots WHERE id = %s", (bot_id,))
             result = cursor.fetchone()
         if result:
-            return CodeExecutor(code=result['source_code'], language=result['language'])
+            return CodeExecutor(code=result['source_code'], language=result['language'], path=result['file_path'])
     finally:
         if conn:
             conn.close()
@@ -64,7 +63,6 @@ def register_snake_events(socketio):
     @socketio.on('new_game', namespace='/snake')
     def new_game(data):
         user_id = data['user_id']
-        # 标记旧游戏为终止
         if user_id in sessions:
             sessions[user_id]['terminated'] = True
         bot_1_code = data.get('bot_1_code')
@@ -111,16 +109,13 @@ def register_snake_events(socketio):
         displays.append(game_state_dict['display'])
 
         for turn in range(maxTurn):
-            # 检查用户是否还在线
             if user_id not in sessions or sessions[user_id]['sid'] != sid:
                 print(f"User {user_id} disconnected, terminating game loop.")
                 break
-
             
             input_str_1 = json.dumps(input_dict_1)
             input_str_2 = json.dumps(input_dict_2)
             # print(f"========== Turn {turn + 1} Input ==========\n {input_str_1}\n {input_str_2}")
-
             def get_output_1():
                 if player_1_type == 'human':
                     while 'pending_move' not in sessions[user_id]:
@@ -151,8 +146,7 @@ def register_snake_events(socketio):
 
             # print(f"========== Turn {turn + 1} Output ==========\n {output_1}\n {output_2}")
             
-            # 构造裁判输入
-            judge_input_dict['log'].append({}) # 奇数个元素留空
+            judge_input_dict['log'].append({}) # leave odd items empty
             judge_input_dict['log'].append({"0": json.loads(output_1), "1": json.loads(output_2)})
             game_state_dict = game.cpp_judge.run_raw_json(judge_input_dict)
             displays.append(game_state_dict['display'])
@@ -178,7 +172,6 @@ def register_snake_events(socketio):
                 # --- Insert match record into database ---
                 try:
                     conn = _get_db_connection()
-                    # 查 bots 表获取用户名
                     with conn.cursor() as cursor:
                         cursor.execute("SELECT bot_name FROM bots WHERE id = %s", (player_1_id,))
                         row1 = cursor.fetchone()
