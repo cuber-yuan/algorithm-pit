@@ -115,7 +115,7 @@ def register_snake_events(socketio):
             
             input_str_1 = json.dumps(input_dict_1)
             input_str_2 = json.dumps(input_dict_2)
-            # print(f"========== Turn {turn + 1} Input ==========\n {input_str_1}\n {input_str_2}")
+            print(f"========== Turn {turn + 1} Input ==========\n {input_str_1}\n {input_str_2}")
             def get_output_1():
                 if player_1_type == 'human':
                     while 'pending_move' not in sessions[user_id]:
@@ -144,7 +144,7 @@ def register_snake_events(socketio):
                 output_1 = future1.result()
                 output_2 = future2.result()
 
-            # print(f"========== Turn {turn + 1} Output ==========\n {output_1}\n {output_2}")
+            print(f"========== Turn {turn + 1} Output ==========\n {output_1}\n {output_2}")
             
             judge_input_dict['log'].append({}) # leave odd items empty
             judge_input_dict['log'].append({"0": json.loads(output_1), "1": json.loads(output_2)})
