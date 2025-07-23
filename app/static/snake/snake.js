@@ -353,16 +353,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Arrow button events
     document.getElementById('arrow-left').onclick = function () {
-        sendHumanDirection(0);
+        sendHumanDirection(3);
     };
     document.getElementById('arrow-down').onclick = function () {
-        sendHumanDirection(1);
-    };
-    document.getElementById('arrow-right').onclick = function () {
         sendHumanDirection(2);
     };
+    document.getElementById('arrow-right').onclick = function () {
+        sendHumanDirection(1);
+    };
     document.getElementById('arrow-up').onclick = function () {
-        sendHumanDirection(3);
+        sendHumanDirection(0);
     };
 
     // Preload audio files for caching
@@ -382,10 +382,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // Keyboard control for human player (WASD)
 document.addEventListener('keydown', (e) => {
     let dir = null;
-    if (e.key === 'a' || e.key === 'A') dir = 0;
-    else if (e.key === 's' || e.key === 'S') dir = 1;
-    else if (e.key === 'd' || e.key === 'D') dir = 2;
-    else if (e.key === 'w' || e.key === 'W') dir = 3;
+    if (e.key === 'a' || e.key === 'A') dir = 3;
+    else if (e.key === 's' || e.key === 'S') dir = 2;
+    else if (e.key === 'd' || e.key === 'D') dir = 1;
+    else if (e.key === 'w' || e.key === 'W') dir = 0;
     if (dir !== null) {
         sendHumanDirection(dir);
     }
