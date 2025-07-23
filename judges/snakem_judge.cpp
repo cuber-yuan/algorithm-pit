@@ -142,28 +142,9 @@ int main()
 	else
 		srand(time(0));
 
-	temp=initdata["width"];
-	width=9+Rand(4);
-	if (temp.isInt())
-	{
-		width=temp.asInt();
-		if (width>13 || width<10)
-			width=12;
-	}
+	width = 11; // Force width to 11 for consistency
+	height = 10; // Force height to 10 for consistency
 	output["initdata"]["width"]=width;
-
-	temp=initdata["height"];
-	height=10+Rand(7);
-	if ((width+height)%2==0)
-		height--;
-	if (temp.isInt())
-	{
-		height=temp.asInt();
-		if (height>17 || height<10)
-			height=12;
-	}
-	width = 10; // Force width to 10 for consistency
-	height = 11; // Force height to 11 for consistency
 	output["initdata"]["height"]=height;
 
 	obs=initdata["obstacle"];

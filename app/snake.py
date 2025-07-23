@@ -90,7 +90,7 @@ def register_snake_events(socketio):
 
         game_state_dict = game.cpp_judge.run_raw_json({});
         # fuck zhouhy, the judge have bugs
-        game_state_dict['display']['width'] , game_state_dict['display']['height'] = game_state_dict['display']['height'], game_state_dict['display']['width']
+        # game_state_dict['display']['width'] , game_state_dict['display']['height'] = game_state_dict['display']['height'], game_state_dict['display']['width']
 
         maxTurn = 200
         judge_input_dict = {'log':[], 'initdata': game_state_dict['initdata']}

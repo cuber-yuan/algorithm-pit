@@ -142,26 +142,25 @@ int main()
 	else
 		srand(time(0));
 
-	temp=initdata["width"];
-	width=9+Rand(4);
-	if (temp.isInt())
+	
+	height=9+Rand(4);//10+Rand(7);
+	width=10+Rand(7);//9+Rand(4);
+	while((height+width)%2==0)
 	{
-		width=temp.asInt();
-		if (width>13 || width<10)
-			width=12;
+		height=9+Rand(4);// 10~13
+		width=10+Rand(7);// 11~17
 	}
-	output["initdata"]["width"]=width;
 
-	temp=initdata["height"];
-	height=10+Rand(7);
-	if ((width+height)%2==0)
-		height--;
-	if (temp.isInt())
-	{
-		height=temp.asInt();
-		if (height>17 || height<10)
-			height=12;
+	temp=initdata["width"];
+	if (temp.isInt()){
+		width=temp.asInt();
 	}
+	temp=initdata["height"];
+	if (temp.isInt()){
+		height=temp.asInt();
+	}
+
+	output["initdata"]["width"]=width;
 	output["initdata"]["height"]=height;
 
 	obs=initdata["obstacle"];

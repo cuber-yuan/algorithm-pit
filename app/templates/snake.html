@@ -88,16 +88,36 @@
       <p id="turnCounter" class="mt-4 text-lg font-semibold">Turn: 0</p>
       <button id="newGameBtn" type="button" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">New
         Game</button>
+      <!-- Turn progress control (moved here) -->
+      <div id="turn-progress-control" class="flex items-center justify-center mt-6 mb-2 select-none gap-6">
+        <button id="turn-play-btn" class="bg-gray-200 rounded-full p-2 hover:bg-blue-200 transition flex items-center justify-center shadow">
+          <span id="turn-play-icon" class="text-2xl text-blue-600">&#9654;</span>
+          <span id="turn-pause-icon" class="text-2xl text-blue-600" style="display:none;">&#10073;&#10073;</span>
+        </button>
+        <div id="turn-progress-bar" class="relative flex items-center" style="width:520px; height:32px; cursor:pointer;">
+          <div class="bg-gray-300 rounded-full" style="height:16px; width:100%; position:absolute; left:0; top:8px;"></div>
+          <div id="turn-progress-fill" class="bg-blue-500 rounded-full transition-all" style="height:16px; width:0%; position:absolute; left:0; top:8px;"></div>
+          <div id="turn-progress-knob" class="bg-blue-500 border-4 border-white rounded-full shadow-lg transition-all" style="width:32px; height:32px; position:absolute; left:0; top:0; transform:translateX(-16px);"></div>
+        </div>
+        <span id="turn-progress-label" class="ml-2 text-base text-gray-700 font-mono min-w-[40px] text-center">0</span>
+      </div>
     </div>
   </div>
 
-  <section class="bg-white p-6 rounded-lg shadow-md hidden xl:block" style="margin-top: 2rem;">
-    <h2 class="text-xl font-bold mb-4">How to Play as Human</h2>
-    <p></strong> Use <b>W</b> (up), <b>S</b> (down), <b>A</b> (left), <b>D</b> (right) keys on your keyboard to control
+  
+
+  <details class="bg-white p-6 rounded-lg shadow-md hidden xl:block" style="margin-top: 2rem;">
+    <summary class="text-xl font-bold mb-4 list-none cursor-pointer flex justify-between items-center">
+        <span>How to Play as Human</span>
+        <span class="transition-transform duration-200 transform group-open:rotate-180">&#9662;</span>
+    </summary>
+    <div class="mt-4">
+        <div class="prose max-w-none" style="line-height:1.8; margin-bottom: 1.5rem;">
+          <p></strong> Use <b>W</b> (up), <b>S</b> (down), <b>A</b> (left), <b>D</b> (right) keys on your keyboard to control
       your snake's direction each turn.</p>
-    <div class="prose max-w-none">
+        </div>
     </div>
-  </section>
+  </details>
 
   <!-- Sample Bot Code Section (Collapsible with HTML/Tailwind only) -->
   <details class="sample-bot-section bg-white p-6 rounded-lg shadow-md mb-8 hidden xl:block" style="margin-top: 2rem;">
@@ -202,6 +222,71 @@ if __name__ == '__main__':
     </div>
   </details>
 
+  <details class="I/O-section bg-white p-6 rounded-lg shadow-md hidden xl:block" style="margin-top: 2rem;">
+    <summary class="text-xl font-bold mb-4 list-none cursor-pointer flex justify-between items-center">
+        <span>I/O Format Specification</span>
+        <span class="transition-transform duration-200 transform group-open:rotate-180">&#9662;</span>
+    </summary>
+    <div class="mt-4">
+        <div class="prose max-w-none" style="line-height:1.8; margin-bottom: 1.5rem;">
+          <pre class="bg-gray-100 p-2 rounded"><code class="language-json">{
+	"requests": [{
+		"height": 10,
+		"obstacle": [{
+			"x": 4,
+			"y": 7
+		}, {
+			"x": 7,
+			"y": 5
+		}, {
+			"x": 3,
+			"y": 2
+		}, {
+			"x": 8,
+			"y": 10
+		}, {
+			"x": 9,
+			"y": 4
+		}, {
+			"x": 2,
+			"y": 8
+		}, {
+			"x": 7,
+			"y": 3
+		}, {
+			"x": 4,
+			"y": 9
+		}, {
+			"x": 5,
+			"y": 11
+		}, {
+			"x": 6,
+			"y": 1
+		}],
+		"width": 11,
+		"x": 1,
+		"y": 1
+	}, {
+		"direction": 3
+	}, {
+		"direction": 0
+	}],
+	"responses": [{
+		"direction": 2
+	}, {
+		"direction": 2
+	}]
+}</code></pre>
+          
+          
+          <pre class="bg-gray-100 p-2 rounded"><code class="language-json">{"response":{"direction":0}}</code></pre>
+          <p style="margin-bottom:1em;">
+             The directions 0, 1, 2, and 3 correspond to up, down, left, and right.
+          </p>
+        </div>
+    </div>
+  </details>
+
   <details class="regulation-section bg-white p-6 rounded-lg shadow-md hidden xl:block" style="margin-top: 2rem;">
     <summary class="text-xl font-bold mb-4 list-none cursor-pointer flex justify-between items-center">
         <span>Regulations</span>
@@ -230,7 +315,7 @@ if __name__ == '__main__':
             per turn (i.e., the tail is not removed), and <b>from turn 26 onwards, it grows by one unit every 3 turns</b>.
           </p>
           <p style="margin-bottom:1em;"></p>
-          <p style="margin-bottom:1em;">The map consists of an n*m grid made up of 1*1 grass tiles and obstacles. The map is
+          <p style="margin-bottom:1em;">The map consists of an h*w grid made up of 1*1 grass tiles and obstacles. The map is
             centrally symmetric.</p>
           <p style="margin-bottom:1em;"></p>
           <p style="margin-bottom:1em;">A snake is considered dead if its head moves into an invalid position or if the
@@ -239,12 +324,84 @@ if __name__ == '__main__':
             head), or the body of the opponent's snake. The game ends immediately when any snake dies. If both snakes die at
             the same time, the game is a draw. Otherwise, the first to die loses, and the other wins.</p>
           <p style="margin-bottom:1em;"></p>
-          <p style="margin-bottom:1em;">The values of n and m are randomly chosen: n is an integer in the range [10, 17],
-            and m is in [10, 13]. Player
-            programs must handle all valid combinations of n and m. The game guarantees that n + m is always an odd number.
+          <p style="margin-bottom:1em;">The values of h and w are randomly chosen: h is an integer in the range [10, 13],
+            and w is in [11, 17]. Player
+            programs must handle all valid combinations of h and w. The game guarantees that h + w is always an odd number.
           </p>
         </div>
     </div>
   </details>
 </div>
+
+<script>
+  // Control parameters
+  let maxTurn = 100; // Max turn, can be set dynamically
+  let currentTurn = 0;
+  let playing = false;
+  let playInterval = null;
+
+  // DOM elements
+  const playBtn = document.getElementById('turn-play-btn');
+  const playIcon = document.getElementById('turn-play-icon');
+  const pauseIcon = document.getElementById('turn-pause-icon');
+  const progressBar = document.getElementById('turn-progress-bar');
+  const progressFill = document.getElementById('turn-progress-fill');
+  const progressKnob = document.getElementById('turn-progress-knob');
+  const progressLabel = document.getElementById('turn-progress-label');
+
+  // Update progress bar UI
+  function updateProgressBar() {
+    const percent = (currentTurn / maxTurn) * 100;
+    progressFill.style.width = percent + '%';
+    progressKnob.style.left = `calc(${percent}% )`;
+    progressLabel.textContent = currentTurn;
+  }
+  updateProgressBar();
+
+  // Play/Pause button logic
+  playBtn.onclick = function() {
+    playing = !playing;
+    playIcon.style.display = playing ? 'none' : '';
+    pauseIcon.style.display = playing ? '' : 'none';
+    if (playing) {
+      playInterval = setInterval(() => {
+        if (currentTurn < maxTurn) {
+          currentTurn++;
+          updateProgressBar();
+          // TODO: trigger turn change event
+        } else {
+          playing = false;
+          playIcon.style.display = '';
+          pauseIcon.style.display = 'none';
+          clearInterval(playInterval);
+        }
+      }, 400);
+    } else {
+      clearInterval(playInterval);
+    }
+  };
+
+  // Click progress bar to set turn
+  progressBar.onclick = function(e) {
+    const rect = progressBar.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percent = Math.max(0, Math.min(1, x / rect.width));
+    currentTurn = Math.round(percent * maxTurn);
+    updateProgressBar();
+    // TODO: trigger turn change event
+  };
+
+  // Optional: expose API for external set/get
+  window.setTurnProgressMax = function(n) {
+    maxTurn = n;
+    updateProgressBar();
+  };
+  window.setTurnProgress = function(n) {
+    currentTurn = Math.max(0, Math.min(maxTurn, n));
+    updateProgressBar();
+  };
+  window.getTurnProgress = function() {
+    return currentTurn;
+  };
+</script>
 {% endblock %}

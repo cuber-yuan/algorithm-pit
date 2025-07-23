@@ -116,7 +116,7 @@ class SnakeScene extends Phaser.Scene {
         this.obstacles.forEach(obs => {
             const x = (obs.x - 1 + 0.5) * this.CELL_SIZE;
             const y = (obs.y - 1 + 0.5) * this.CELL_SIZE;
-            const sprite = this.add.sprite(x, y, 'stone');
+            const sprite = this.add.sprite(y, x, 'stone');
             sprite.setDisplaySize(this.CELL_SIZE, this.CELL_SIZE);
             this.obstacleLayer.add(sprite);
         });
@@ -127,7 +127,7 @@ class SnakeScene extends Phaser.Scene {
     }
 
     renderSnake(snake, color, layer) {
-        const dirToAngle = [0, 270, 180, 90];
+        const dirToAngle = [90, 180, 270, 0];
         for (let i = 0; i < snake.length; i++) {
             const segment = snake[i];
             const x = (segment.x - 1 + 0.5) * this.CELL_SIZE;
@@ -155,7 +155,7 @@ class SnakeScene extends Phaser.Scene {
                     } else if ((inDir + 3) % 4 === outDir) {
                         angle = dirToAngle[outDir];
                     }
-                    const sprite = this.add.sprite(x, y, spriteKey);
+                    const sprite = this.add.sprite(y, x, spriteKey);
                     sprite.setDisplaySize(this.CELL_SIZE, this.CELL_SIZE);
                     sprite.setAngle(angle);
                     layer.add(sprite);
@@ -163,7 +163,7 @@ class SnakeScene extends Phaser.Scene {
                 }
             }
             if (spriteKey) {
-                const sprite = this.add.sprite(x, y, spriteKey);
+                const sprite = this.add.sprite(y, x, spriteKey);
                 sprite.setDisplaySize(this.CELL_SIZE, this.CELL_SIZE);
                 sprite.setAngle(angle);
                 layer.add(sprite);
